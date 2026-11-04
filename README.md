@@ -100,6 +100,10 @@ GitHub Actions runs the Python and JavaScript checks on pushes and pull requests
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 
+## Contributors
+
+**Primary contributor and maintainer:** [segayi1](https://github.com/segayi1)
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
