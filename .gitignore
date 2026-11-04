@@ -1,0 +1,13 @@
+data/workbench.sqlite*
+data/secrets.bin
+data/Library/
+data/guides.json
+data/seed.json
+data/zotero_snapshot.json
+data/instance.json
+*.log
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+.DS_Store
