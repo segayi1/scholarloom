@@ -3,6 +3,7 @@ const vm = require('vm');
 const assert = require('assert');
 
 const source = fs.readFileSync(__dirname + '/web/app.js', 'utf8');
+const html = fs.readFileSync(__dirname + '/web/index.html', 'utf8');
 const logic = source.slice(source.indexOf('function normalized('), source.indexOf('function filteredDocs('));
 const context = {};
 vm.createContext(context);
@@ -19,4 +20,6 @@ assert.equal(rank('PD-1 表位')[0].row.key, 'A1');
 assert.equal(rank('zotero')[0], undefined, 'Attachment URLs must not count as search content');
 assert.equal(rank('CN123456789A')[0].row.key, 'P1');
 assert.equal(rank('sdfqzzzxxyy').length, 0);
+assert(html.includes('id="language-toggle"'), 'Language switcher must remain in the page header');
+assert(source.includes("localStorage.getItem(LANGUAGE_KEY)"), 'Language preference must persist');
 console.log('Web search ranking checks passed');

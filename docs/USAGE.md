@@ -6,6 +6,8 @@ Download a PDF or EPUB into a watched folder. The workbench waits until the file
 
 Use the `Search and guides` tab to search titles, authors, DOI, patent number, Chinese reading cards, and keywords. Select two or three cards for a side-by-side comparison. `Regenerate summary` retries only the current reading card.
 
+Use the `EN` / `中文` button in the header to switch the interface language. The choice is stored in the browser; bibliographic data and generated reading cards keep their original language.
+
 ## Review Queue
 
 Files that lack a readable DOI, that point to a preprint record, or whose first-page title disagrees with Crossref stay in the review queue. This is deliberate: the workbench does not guess an article's identity from its filename. Manually add a correct record in Zotero when necessary; the workbench will synchronize it on its next refresh.

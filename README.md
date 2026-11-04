@@ -6,14 +6,25 @@ No literature records, personal files, database contents, API keys, or Zotero sn
 
 ## What It Does
 
-- Watches one or more local folders for finished PDF and EPUB downloads.
-- Reads the first pages locally, resolves DOI metadata with Crossref, and checks title agreement before importing.
-- Uses DOI, patent number, and file content to avoid duplicate Zotero items.
-- Creates a stable copy of each accepted file and links it to Zotero.
-- Imports journal articles and patents only; uncertain files stay in a review queue.
-- Stores processing state, reading cards, and encrypted credentials on the local machine.
-- Serves a browser UI at `http://127.0.0.1:8766` with search, filters, classification, reading cards, and three-item comparisons.
-- Sends only the current document's abstract or a bounded text excerpt to the model endpoint configured by the user.
+Literature Workbench turns the messy moment after a PDF download into a reviewable local workflow. It is built for researchers who want Zotero to remain their source of truth, while gaining a faster way to triage new papers, spot duplicates, and search their own reading notes.
+
+- **Watch without babysitting.** Add one or more download folders. The workbench notices finished PDF and EPUB files, waits for downloads to settle, and shows every file as it moves through the queue.
+- **Verify before importing.** It extracts the opening pages locally, reads DOI or patent-number signals, queries Crossref for bibliographic data, and requires the local title and publisher metadata to agree. A filename alone is never treated as proof of identity.
+- **Keep the library clean.** File hashes, DOI values, and patent numbers prevent the same work from being imported twice. Accepted full texts are copied to a stable local library; originals in Downloads are left untouched.
+- **Separate certainty from guesses.** Journal articles and patents that pass verification go to Zotero with topic collections, source tags, and linked full texts. Scanned, ambiguous, or mismatched files remain in a review queue for a deliberate manual decision.
+- **Make the library navigable.** The local dashboard supports full-text-style metadata search, topic guides, year and document-type filters, reading routes, and a side-by-side comparison view for up to three papers.
+- **Turn abstracts into starting points.** With a user-supplied Chat Completions-compatible endpoint, the workbench creates structured Chinese reading cards: a one-sentence claim, research question, model, method, findings, use case, limits, and the evidence basis for the summary. The model receives only the current abstract or a bounded local excerpt.
+- **Stay local by default.** The server binds to `127.0.0.1`, write requests require a per-process CSRF token, private text fields are omitted from browser responses, and credentials are kept outside Git. There is no hosted account, telemetry service, or bundled literature corpus.
+- **Switch the interface language.** Use the `EN` / `中文` control in the header to change the interface between English and Simplified Chinese. The choice is remembered in the browser; bibliographic records and generated summaries remain in their original language.
+
+### The Working Loop
+
+```text
+Download -> settle -> inspect locally -> resolve metadata -> deduplicate
+        -> import to Zotero -> build a reading card -> search, compare, revisit
+```
+
+Every step leaves a visible status. When the network, Zotero, or the model is unavailable, the item goes back to a recoverable queue instead of disappearing.
 
 ## Requirements
 
