@@ -62,19 +62,9 @@ ScholarLoom watches the places where papers actually arrive, verifies each file 
 
 ## From file to finding
 
-```mermaid
-flowchart LR
-    A[Download folders] --> B{File settled?}
-    B -- Not yet --> A
-    B -- Yes --> C[Local identity check]
-    C -->|Journal article or patent| D[Crossref match + deduplication]
-    C -->|Uncertain| R[Review queue]
-    D --> E[Zotero record + stable local copy]
-    E --> F[AI reading card]
-    F --> G[Search / Q&amp;A / compare]
-    G --> H[Evidence synthesis + Markdown]
-    I[OpenAlex discovery] -.-> A
-```
+<div align="center">
+  <img src="docs/assets/scholarloom-workflow.svg" alt="ScholarLoom End-to-End Pipeline" width="100%">
+</div>
 
 Every step leaves a visible status. If the network, Zotero, or the model is unavailable, the item returns to a recoverable queue instead of disappearing.
 

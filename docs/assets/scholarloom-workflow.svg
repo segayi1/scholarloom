@@ -1,0 +1,246 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 550" width="100%" height="auto" role="img" aria-labelledby="wf_title wf_desc">
+  <title id="wf_title">From File to Finding: End-to-End Research Pipeline</title>
+  <desc id="wf_desc">Automated local intake · deterministic publisher verification · Zotero sync · citation-backed AI intelligence</desc>
+
+  <style>
+    .wf-canvas { fill: #fbf9f4; stroke: #e6dfd1; stroke-width: 1.5; }
+    .wf-col { fill: #ffffff; stroke: #e3ded2; stroke-width: 1.2; rx: 12px; }
+    .wf-col-header { fill: #f4efe4; stroke: #e3ded2; stroke-width: 1; }
+    .wf-card { fill: #fdfdfc; stroke: #ebe5d8; stroke-width: 1; rx: 8px; }
+    .wf-card-pass { fill: #f2f7f4; stroke: #c8ded4; stroke-width: 1; rx: 6px; }
+    .wf-card-review { fill: #fcf4f2; stroke: #ebcdc4; stroke-width: 1; rx: 6px; }
+    .wf-pill { fill: #e8f0ed; stroke: #c2d8cf; stroke-width: 1; rx: 11px; }
+    .wf-num { fill: #b38b3f; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 800; font-size: 13px; }
+    .wf-title { fill: #142823; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 700; font-size: 18px; }
+    .wf-subtitle { fill: #5e6d68; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12.5px; }
+    .wf-col-title { fill: #174c42; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 700; font-size: 13.5px; letter-spacing: 0.5px; }
+    .wf-col-sub { fill: #72827d; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; }
+    .wf-tag { fill: #8a7748; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+    .wf-text-bold { fill: #1c2e29; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 600; font-size: 12px; }
+    .wf-text-desc { fill: #657570; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; }
+    .wf-text-pass { fill: #175240; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 600; font-size: 11.5px; }
+    .wf-text-review { fill: #9e3f2d; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 600; font-size: 11.5px; }
+    .wf-arrow-line { stroke: #b38b3f; stroke-width: 2; stroke-dasharray: 4,3; fill: none; }
+    .wf-arrow-head { fill: #b38b3f; }
+    .wf-arrow-box { fill: #f4efe4; stroke: #d9ceba; stroke-width: 1; rx: 4px; }
+    .wf-arrow-label { fill: #8a6c2f; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; font-weight: 700; text-anchor: middle; }
+    .wf-footer-bg { fill: #f3efe6; stroke: #e3ded2; stroke-width: 1; rx: 8px; }
+    .wf-footer-text { fill: #4d5c57; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 500; }
+
+    @media (prefers-color-scheme: dark) {
+      .wf-canvas { fill: #0e1a18; stroke: #203833; }
+      .wf-col { fill: #142421; stroke: #233e38; }
+      .wf-col-header { fill: #192d29; stroke: #233e38; }
+      .wf-card { fill: #182b28; stroke: #25423b; }
+      .wf-card-pass { fill: #142e27; stroke: #1e4d40; }
+      .wf-card-review { fill: #2c1b18; stroke: #4f2720; }
+      .wf-pill { fill: #14352e; stroke: #22574b; }
+      .wf-num { fill: #d4a754; }
+      .wf-title { fill: #e8edea; }
+      .wf-subtitle { fill: #9eb0ab; }
+      .wf-col-title { fill: #65baa9; }
+      .wf-col-sub { fill: #829690; }
+      .wf-tag { fill: #c7a456; }
+      .wf-text-bold { fill: #e0e8e5; }
+      .wf-text-desc { fill: #90a39d; }
+      .wf-text-pass { fill: #52c7a5; }
+      .wf-text-review { fill: #ea7f6d; }
+      .wf-arrow-line { stroke: #d4a754; }
+      .wf-arrow-head { fill: #d4a754; }
+      .wf-arrow-box { fill: #192d29; stroke: #2d4f47; }
+      .wf-arrow-label { fill: #d4a754; }
+      .wf-footer-bg { fill: #162724; stroke: #253d37; }
+      .wf-footer-text { fill: #a5b7b1; }
+    }
+  </style>
+
+  <defs>
+    <marker id="arrowR" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" class="wf-arrow-head"/>
+    </marker>
+    <filter id="softShadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Canvas Container -->
+  <rect x="10" y="10" width="1180" height="530" rx="16" class="wf-canvas"/>
+
+  <!-- Top Header Section -->
+  <g transform="translate(36, 28)">
+    <rect x="0" y="0" width="220" height="22" rx="11" class="wf-pill"/>
+    <circle cx="12" cy="11" r="4" fill="#2d8c70"/>
+    <text x="24" y="15" fill="#174c42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.6">SYSTEM ARCHITECTURE &amp; PIPELINE</text>
+    
+    <text x="0" y="44" class="wf-title">From File to Finding: End-to-End Research Pipeline</text>
+    <text x="0" y="63" class="wf-subtitle">Automated local intake · deterministic publisher verification · Zotero sync · citation-backed AI intelligence</text>
+
+    <!-- Top Right Local-First Pill -->
+    <g transform="translate(930, 8)">
+      <rect x="0" y="0" width="194" height="26" rx="13" class="wf-pill"/>
+      <circle cx="14" cy="13" r="4" fill="#2d8c70"/>
+      <text x="26" y="17" fill="#174c42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600">Local-First · Zero Telemetry</text>
+    </g>
+  </g>
+
+  <!-- ==================== COLUMN 1: INTAKE & VERIFICATION ==================== -->
+  <g transform="translate(36, 114)">
+    <rect x="0" y="0" width="344" height="364" class="wf-col" filter="url(#softShadow)"/>
+    <path d="M 0 12 Q 0 0 12 0 L 332 0 Q 344 0 344 12 L 344 48 L 0 48 Z" class="wf-col-header"/>
+    
+    <text x="16" y="24" class="wf-num">01</text>
+    <text x="44" y="24" class="wf-col-title">INTAKE &amp; VERIFICATION</text>
+    <text x="44" y="39" class="wf-col-sub">Folder monitor &amp; publisher identity check</text>
+
+    <!-- Card 1.1 -->
+    <g transform="translate(14, 58)">
+      <rect x="0" y="0" width="316" height="74" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">DUAL INTAKE CHANNELS</text>
+      <text x="12" y="36" class="wf-text-bold">📁 Downloads Folders (PDF / EPUB)</text>
+      <text x="12" y="52" class="wf-text-bold">🌐 OpenAlex Discovery (Free OA Search)</text>
+      <text x="12" y="66" class="wf-text-desc">Settle check prevents reading partial downloads</text>
+    </g>
+
+    <!-- Down arrow -->
+    <path d="M 172 136 L 172 146" stroke="#b38b3f" stroke-width="1.5" marker-end="url(#arrowR)" fill="none"/>
+
+    <!-- Card 1.2 -->
+    <g transform="translate(14, 150)">
+      <rect x="0" y="0" width="316" height="66" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">LOCAL METADATA EXTRACTION</text>
+      <text x="12" y="36" class="wf-text-bold">🔍 Extract DOI &amp; patent code from Page 1</text>
+      <text x="12" y="54" class="wf-text-desc">SHA-256 content hashing &amp; Crossref validation</text>
+    </g>
+
+    <!-- Down arrow -->
+    <path d="M 172 220 L 172 230" stroke="#b38b3f" stroke-width="1.5" marker-end="url(#arrowR)" fill="none"/>
+
+    <!-- Card 1.3 -->
+    <g transform="translate(14, 234)">
+      <rect x="0" y="0" width="316" height="116" class="wf-card"/>
+      <text x="12" y="16" class="wf-tag">BRANCHING DECISION</text>
+      
+      <!-- Pass branch -->
+      <rect x="10" y="24" width="296" height="40" class="wf-card-pass"/>
+      <text x="20" y="40" class="wf-text-pass">✓ Validated Journal Article / Patent</text>
+      <text x="20" y="54" class="wf-text-desc">Proceeds to deduplication &amp; Zotero sync</text>
+      
+      <!-- Review branch -->
+      <rect x="10" y="68" width="296" height="40" class="wf-card-review"/>
+      <text x="20" y="84" class="wf-text-review">⚠️ Review Queue (Uncertain / Unmatched)</text>
+      <text x="20" y="98" class="wf-text-desc">Retained for human triage; never discarded</text>
+    </g>
+  </g>
+
+  <!-- ==================== ARROW CONNECTOR 1 -> 2 ==================== -->
+  <g transform="translate(380, 275)">
+    <path d="M 2 0 L 44 0" class="wf-arrow-line" marker-end="url(#arrowR)"/>
+    <rect x="-14" y="-22" width="76" height="16" class="wf-arrow-box"/>
+    <text x="24" y="-11" class="wf-arrow-label">Verified</text>
+  </g>
+
+  <!-- ==================== COLUMN 2: STORAGE & ORGANIZATION ==================== -->
+  <g transform="translate(428, 114)">
+    <rect x="0" y="0" width="344" height="364" class="wf-col" filter="url(#softShadow)"/>
+    <path d="M 0 12 Q 0 0 12 0 L 332 0 Q 344 0 344 12 L 344 48 L 0 48 Z" class="wf-col-header"/>
+    
+    <text x="16" y="24" class="wf-num">02</text>
+    <text x="44" y="24" class="wf-col-title">LIBRARY &amp; VAULT</text>
+    <text x="44" y="39" class="wf-col-sub">Zotero local sync &amp; file vaulting</text>
+
+    <!-- Card 2.1 -->
+    <g transform="translate(14, 58)">
+      <rect x="0" y="0" width="316" height="74" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">DEDUPLICATION GATE</text>
+      <text x="12" y="37" class="wf-text-bold">🛡️ Content Hash + DOI Collision Barrier</text>
+      <text x="12" y="55" class="wf-text-desc">Prevents duplicate imports; recognizes revisions</text>
+    </g>
+
+    <!-- Down arrow -->
+    <path d="M 172 136 L 172 146" stroke="#b38b3f" stroke-width="1.5" marker-end="url(#arrowR)" fill="none"/>
+
+    <!-- Card 2.2 -->
+    <g transform="translate(14, 150)">
+      <rect x="0" y="0" width="316" height="86" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">ZOTERO LOCAL INTEGRATION</text>
+      <text x="12" y="36" class="wf-text-bold">🔗 Connects via Local Desktop API (:23119)</text>
+      <text x="12" y="53" class="wf-text-desc">Creates items, subcollections &amp; source tags</text>
+      <rect x="12" y="60" width="138" height="18" rx="4" fill="#e8f0ed"/>
+      <text x="18" y="73" fill="#174c42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="600">Tag: 来源/ScholarLoom</text>
+    </g>
+
+    <!-- Down arrow -->
+    <path d="M 172 240 L 172 250" stroke="#b38b3f" stroke-width="1.5" marker-end="url(#arrowR)" fill="none"/>
+
+    <!-- Card 2.3 -->
+    <g transform="translate(14, 254)">
+      <rect x="0" y="0" width="316" height="96" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">STABLE LOCAL VAULT</text>
+      <text x="12" y="36" class="wf-text-bold">📦 Full texts archived into data/Library/</text>
+      <text x="12" y="54" class="wf-text-desc">Downloads folder untouched; indexed in SQLite</text>
+      <text x="12" y="74" class="wf-text-bold">🗄️ SQLite: workbench.sqlite</text>
+      <text x="12" y="88" class="wf-text-desc">Recoverable task queues; offline resilient</text>
+    </g>
+  </g>
+
+  <!-- ==================== ARROW CONNECTOR 2 -> 3 ==================== -->
+  <g transform="translate(772, 275)">
+    <path d="M 2 0 L 44 0" class="wf-arrow-line" marker-end="url(#arrowR)"/>
+    <rect x="-14" y="-22" width="76" height="16" class="wf-arrow-box"/>
+    <text x="24" y="-11" class="wf-arrow-label">Structured</text>
+  </g>
+
+  <!-- ==================== COLUMN 3: INTELLIGENCE & REVIEW ==================== -->
+  <g transform="translate(820, 114)">
+    <rect x="0" y="0" width="344" height="364" class="wf-col" filter="url(#softShadow)"/>
+    <path d="M 0 12 Q 0 0 12 0 L 332 0 Q 344 0 344 12 L 344 48 L 0 48 Z" class="wf-col-header"/>
+    
+    <text x="16" y="24" class="wf-num">03</text>
+    <text x="44" y="24" class="wf-col-title">INTELLIGENCE &amp; REVIEW</text>
+    <text x="44" y="39" class="wf-col-sub">AI reading cards &amp; evidence review</text>
+
+    <!-- Card 3.1 -->
+    <g transform="translate(14, 58)">
+      <rect x="0" y="0" width="316" height="78" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">AI STRUCTURED READING CARDS</text>
+      <text x="12" y="37" class="wf-text-bold">💡 Findings · Questions · Methods · Limitations</text>
+      <text x="12" y="53" class="wf-text-desc">Follows UI or configured language; explicit basis</text>
+      <text x="12" y="68" class="wf-text-desc">Explicit basis (Abstract / Full-text excerpt)</text>
+    </g>
+
+    <!-- Down arrow -->
+    <path d="M 172 140 L 172 150" stroke="#b38b3f" stroke-width="1.5" marker-end="url(#arrowR)" fill="none"/>
+
+    <!-- Card 3.2 -->
+    <g transform="translate(14, 154)">
+      <rect x="0" y="0" width="316" height="82" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">INTERACTIVE CITATION Q&amp;A</text>
+      <text x="12" y="36" class="wf-text-bold">💬 Contextual Q&amp;A on extracted PDF text</text>
+      <text x="12" y="53" class="wf-text-desc">Cites [Page X] links to open Zotero at exact page</text>
+      <rect x="12" y="60" width="186" height="18" rx="4" fill="#eaf2f6"/>
+      <text x="18" y="73" fill="#2d6a8b" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9.5" font-weight="600">Citations: [Page X] opens Zotero PDF</text>
+    </g>
+
+    <!-- Down arrow -->
+    <path d="M 172 240 L 172 250" stroke="#b38b3f" stroke-width="1.5" marker-end="url(#arrowR)" fill="none"/>
+
+    <!-- Card 3.3 -->
+    <g transform="translate(14, 254)">
+      <rect x="0" y="0" width="316" height="96" class="wf-card"/>
+      <text x="12" y="18" class="wf-tag">CROSS-PAPER EVIDENCE REVIEW</text>
+      <text x="12" y="36" class="wf-text-bold">📑 2–4 Comparative Ledger · 5–12 Mini-Review</text>
+      <text x="12" y="54" class="wf-text-desc">Mapped [P1]–[P12] evidence; Markdown download</text>
+      <rect x="12" y="68" width="180" height="20" rx="4" fill="#f7f1e3" stroke="#e0d5be" stroke-width="0.8"/>
+      <text x="18" y="82" fill="#8a6c2f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="600">⬇️ Export Markdown Evidence Report</text>
+    </g>
+  </g>
+
+  <!-- ==================== BOTTOM FOOTER: GUARANTEES ==================== -->
+  <g transform="translate(36, 492)">
+    <rect x="0" y="0" width="1128" height="34" class="wf-footer-bg"/>
+    <text x="24" y="21" class="wf-footer-text">🛡️ 100% Local-First: Binds only to 127.0.0.1; local secrets; zero telemetry</text>
+    <text x="440" y="21" class="wf-footer-text">⚡ Bring Your Own LLM: Compatible with any standard OpenAI Chat API</text>
+    <text x="820" y="21" class="wf-footer-text">📎 Deep-Linked Evidence: Directly opens exact Zotero PDF pages</text>
+  </g>
+
+</svg>

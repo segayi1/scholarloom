@@ -62,19 +62,9 @@ ScholarLoom 会监视文献真正进入电脑的位置，在导入前核验文�
 
 ## 从文件到发现
 
-```mermaid
-flowchart LR
-    A[下载文件夹] --> B{文件已稳定?}
-    B -- 否 --> A
-    B -- 是 --> C[本地身份核验]
-    C -->|期刊论文或专利| D[Crossref 匹配 + 去重]
-    C -->|不确定| R[待审核队列]
-    D --> E[Zotero 记录 + 本地全文副本]
-    E --> F[AI 结构化速读]
-    F --> G[检索 / 问答 / 比较]
-    G --> H[证据综合 + Markdown]
-    I[OpenAlex 文献发现] -.-> A
-```
+<div align="center">
+  <img src="docs/assets/scholarloom-workflow.zh-CN.svg" alt="ScholarLoom 全流程工作流" width="100%">
+</div>
 
 每一步都有可见状态。网络、Zotero 或模型暂时不可用时，条目会回到可恢复的队列，不会消失。
 
