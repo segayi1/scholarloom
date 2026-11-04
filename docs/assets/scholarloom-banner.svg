@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">ScholarLoom</title>
+  <desc id="desc">A local-first research desk that connects downloaded papers, Zotero, AI reading, and evidence synthesis.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#102f2b"/>
+      <stop offset="0.56" stop-color="#16493f"/>
+      <stop offset="1" stop-color="#0b2725"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.73" cy="0.28" r="0.62">
+      <stop offset="0" stop-color="#d9bb78" stop-opacity="0.28"/>
+      <stop offset="0.62" stop-color="#d9bb78" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#d9bb78" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse">
+      <path d="M38 0H0V38" fill="none" stroke="#f5ead2" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#041311" flood-opacity="0.38"/>
+    </filter>
+    <clipPath id="frame">
+      <rect width="1200" height="360" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="360" fill="url(#bg)"/>
+    <rect width="1200" height="360" fill="url(#grid)"/>
+    <rect width="1200" height="360" fill="url(#glow)"/>
+    <circle cx="1110" cy="38" r="190" fill="none" stroke="#e1c783" stroke-opacity="0.11" stroke-width="1"/>
+    <circle cx="1110" cy="38" r="138" fill="none" stroke="#e1c783" stroke-opacity="0.1" stroke-width="1"/>
+    <circle cx="1110" cy="38" r="86" fill="none" stroke="#e1c783" stroke-opacity="0.1" stroke-width="1"/>
+
+    <g transform="translate(72 62)">
+      <rect width="54" height="3" rx="1.5" fill="#ef9177"/>
+      <text x="0" y="42" fill="#e6d5b5" font-family="Georgia, serif" font-size="20" letter-spacing="4">LOCAL-FIRST RESEARCH STUDIO</text>
+      <text x="0" y="116" fill="#fffaf0" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="700" letter-spacing="-2">ScholarLoom</text>
+      <text x="0" y="163" fill="#d7e6df" font-family="Segoe UI, Arial, sans-serif" font-size="21">From downloaded papers to a research desk you can trust.</text>
+      <line x1="0" y1="197" x2="574" y2="197" stroke="#e6d5b5" stroke-opacity="0.25"/>
+      <g fill="#e6d5b5" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" letter-spacing="2.5">
+        <text x="0" y="235">AUTOMATIC INTAKE</text>
+        <text x="214" y="235">AI READING</text>
+        <text x="370" y="235">EVIDENCE MAPS</text>
+      </g>
+      <g fill="#a9c8bc" font-family="Segoe UI, Arial, sans-serif" font-size="14">
+        <text x="0" y="267">Zotero-native</text>
+        <text x="129" y="267">page-linked</text>
+        <text x="242" y="267">bilingual</text>
+        <text x="336" y="267">private</text>
+      </g>
+    </g>
+
+    <g transform="translate(760 54)" filter="url(#shadow)">
+      <rect x="0" y="0" width="354" height="252" rx="22" fill="#f6f0e2"/>
+      <rect x="18" y="18" width="318" height="216" rx="15" fill="#fbf8f0" stroke="#d8c9ad"/>
+      <circle cx="44" cy="45" r="7" fill="#e98972"/>
+      <circle cx="66" cy="45" r="7" fill="#d7b76d"/>
+      <circle cx="88" cy="45" r="7" fill="#7aa592"/>
+      <path d="M40 78H282" stroke="#d8c9ad"/>
+      <rect x="40" y="101" width="124" height="10" rx="5" fill="#163f39"/>
+      <rect x="40" y="124" width="252" height="6" rx="3" fill="#bfcdc5"/>
+      <rect x="40" y="140" width="212" height="6" rx="3" fill="#d2dcd6"/>
+
+      <g transform="translate(40 170)">
+        <rect width="74" height="42" rx="9" fill="#e4eee8"/>
+        <path d="M17 13h40M17 21h34M17 29h24" stroke="#4b796c" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(126 170)">
+        <rect width="74" height="42" rx="9" fill="#f4e6c4"/>
+        <circle cx="22" cy="21" r="9" fill="none" stroke="#927338" stroke-width="3"/>
+        <path d="M29 28l10 10" stroke="#927338" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(212 170)">
+        <rect width="74" height="42" rx="9" fill="#f3d9d3"/>
+        <path d="M17 29V17m14 12V12m14 17V20m14 9V8" stroke="#9d5849" stroke-width="4" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <g fill="none" stroke="#e0c47e" stroke-linecap="round">
+      <path d="M728 102C744 75 753 75 771 93" stroke-opacity="0.42"/>
+      <path d="M722 179C741 155 750 155 770 174" stroke-opacity="0.3"/>
+      <path d="M729 254C747 232 754 232 772 249" stroke-opacity="0.24"/>
+      <circle cx="729" cy="102" r="4" fill="#e0c47e" stroke-width="0"/>
+      <circle cx="722" cy="179" r="4" fill="#e0c47e" stroke-width="0"/>
+      <circle cx="729" cy="254" r="4" fill="#e0c47e" stroke-width="0"/>
+    </g>
+  </g>
+</svg>
