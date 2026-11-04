@@ -4,7 +4,7 @@
 
 **A local-first research studio that turns downloaded papers into an organized, searchable, and intelligible private knowledge base.**
 
-ScholarLoom watches your download folders, checks whether each file is a journal article or patent, imports verified records into Zotero, and turns the resulting library into a fast reading workspace. Optional Chat Completions-compatible models turn publisher abstracts or bounded local excerpts into structured reading cards in English or Simplified Chinese.
+ScholarLoom watches your download folders, checks whether each file is a journal article or patent, imports verified records into Zotero, and turns the resulting library into a working research desk. Optional Chat Completions-compatible models create reading cards, answer evidence-grounded questions with links to Zotero PDF pages, and synthesize 2–12 papers into a sourced comparison or focused mini-review. OpenAlex powers free discovery without requiring an account or API key.
 
 No literature records, personal files, database contents, API keys, or Zotero snapshots are included in this repository. The application starts with an empty library.
 
@@ -18,13 +18,17 @@ Every document has a visible state, every automatic decision can be inspected, a
 - **Verify before importing.** It extracts the opening pages locally, reads DOI or patent-number signals, queries Crossref for bibliographic data, and requires the local title and publisher metadata to agree. A filename alone is never treated as proof of identity.
 - **Keep the library clean.** File hashes, DOI values, and patent numbers prevent the same work from being imported twice. Accepted full texts are copied to a stable local library; originals in Downloads are left untouched.
 - **Separate certainty from guesses.** Journal articles and patents that pass verification go to Zotero with topic collections, source tags, and linked full texts. Scanned, ambiguous, or mismatched files remain in a review queue for a deliberate manual decision.
-- **Match ideas, not just literal strings.** Search covers titles, reading cards, authors, keywords, DOI and patent identifiers. Bilingual synonym groups connect related concepts such as `single B-cell`, `单B细胞`, and `单细胞抗体`, then rank matches across research questions, methods, findings, and use cases. The matching is local and explainable; it does not require an external embedding service.
-- **Make the library navigable.** Browse topic guides, filter by year and document type, follow curated reading routes, and place up to three papers side by side for a direct comparison of questions, methods, and findings.
-- **Turn abstracts into starting points.** With a user-supplied Chat Completions-compatible endpoint, the workbench creates structured reading cards: a one-sentence claim, research question, model, method, findings, use case, limits, and the evidence basis for the summary. New imports and manual regenerations follow the selected interface language. The model receives only the current abstract or a bounded local excerpt.
+- **Match ideas, not just literal strings.** Search covers titles, reading cards, authors, keywords, DOI and patent identifiers. Bilingual synonym groups connect related concepts such as `single B-cell`, `单B细胞`, and `单细胞抗体`, then rank matches across research questions, methods, findings, and use cases. Each result shows why it matched and highlights direct terms. The matching is local and explainable; it does not require an external embedding service.
+- **Keep a reading workflow, not just a list.** Mark papers unread, reading, or read; save a short reading note; filter by status; and open the last seven days of additions from the home view. Browse topic guides and curated reading routes when a broader path is useful.
+- **Turn abstracts into starting points.** With a user-supplied Chat Completions-compatible endpoint, the workbench creates structured reading cards: a one-sentence claim, research question, model, method, findings, use case, limits, and the evidence basis for the summary. The model receives only the current abstract or a bounded local excerpt.
+- **Ask the paper, then jump to the page.** Open any reading card and query up to 60 extracted PDF pages. Answers cite sources as `[Page N]`; clicking a citation opens that exact page in Zotero. The assistant must say when the text does not support an answer.
+- **Synthesize instead of stacking summaries.** Compare 2–4 papers side by side, or select 5–12 for a focused mini-review. Larger selections use an evidence ledger, optional focus question, paper-ID citations, and a cautious 250–500-word synthesis. The report can be copied or downloaded as Markdown for a lab note or manuscript draft.
+- **Use reviewer-grade prompt presets.** Six editable presets cover methods and evidence, negative results, mechanistic contribution, translational assessment, cross-paper arbitration, and reading-card extraction. Chinese and English versions are stored locally and can be reset to the documented defaults.
+- **Discover beyond the library.** Switch the search area to `Discover online` for a free OpenAlex topic search, or request related papers from an individual reading card. Results show citation counts and open-access status; an OA PDF can enter the same local review, deduplication, Zotero, and reading-card workflow with one click.
 - **Stay local by default.** The server binds to `127.0.0.1`, write requests require a per-process CSRF token, private text fields are omitted from browser responses, and credentials are kept outside Git. There is no hosted account, telemetry service, or bundled literature corpus.
-- **Switch the interface language.** Use the `EN` / `中文` control in the header to change the interface between English and Simplified Chinese. The choice is remembered in the browser and controls the language of new or regenerated reading cards. Existing summaries remain unchanged, and bibliographic data keeps its source language.
+- **Choose interface and AI languages separately.** Use the `EN` / `中文` control in the header for the interface. In Settings, choose `Follow interface`, `简体中文`, or `English` for AI output. One AI-language setting applies to new reading cards, paper Q&A, regenerated cards, and cross-paper synthesis. Existing work is not rewritten.
 
-> **Language controls new summaries.** Select `EN` to make future imports and manually regenerated reading cards English. Select `中文` to generate them in Simplified Chinese. Existing reading cards stay in the language in which they were created until you regenerate them.
+> **One AI output language.** `Follow interface` resolves to the current `EN` or `中文` interface choice. An explicit Chinese or English setting keeps AI output fixed even when the interface changes. Existing reading cards stay in their original language until you regenerate them.
 
 ### The Working Loop
 
@@ -41,7 +45,8 @@ Every step leaves a visible status. When the network, Zotero, or the model is un
 - PyMuPDF (`pip install -r requirements.txt`)
 - Zotero Desktop with its local API enabled
 - Node.js 20+ only for the optional JavaScript check
-- An OpenAI-compatible Chat Completions endpoint, model name, and API key for automatic reading cards
+- An OpenAI-compatible Chat Completions endpoint, model name, and API key for reading cards, paper Q&A, and synthesis
+- Internet access to `api.openalex.org` for optional external discovery
 
 On Windows, API keys and Zotero authorization are encrypted with the current user's DPAPI credentials. On other systems, the key file is stored locally without DPAPI protection; keep `data/secrets.bin` private.
 
@@ -62,7 +67,7 @@ Windows users can double-click `launch.vbs`; PowerShell and POSIX users can run 
 
 1. Open Zotero. In `Settings -> Advanced`, enable `Allow other applications on this computer to communicate with Zotero`.
 2. In ScholarLoom's `Settings` tab, click `Connect Zotero`. Choose `Always Allow` in Zotero to permit future background imports. Revoke this permission in Zotero at any time.
-3. Enter a Chat Completions-compatible HTTPS API base URL, model name, and API key. Local loopback endpoints may use HTTP. Click `Save all settings`, then `Test summary model`.
+3. Enter a Chat Completions-compatible HTTPS API base URL, model name, and API key. Local loopback endpoints may use HTTP. Choose the AI output language, then click `Save all settings` and `Test research model`.
 4. Set the folders to watch. The default is the current user's `Downloads` folder. Existing files in a newly added folder are baselined; use `Add existing downloads` to process them deliberately.
 
 Automatic import can also work without a model. Reading cards then stay in a pending state and can be generated later.
@@ -78,7 +83,7 @@ Automatic import can also work without a model. Reading cards then stay in a pen
 | `data/guides.json` | Optional local topic guides and reading routes | No |
 | `web/` | Browser UI | Yes |
 
-The server listens on `127.0.0.1` only, validates `Host`, `Origin`, and a per-process CSRF token on write requests, and exposes only known static routes. Model text requests use the endpoint configured in Settings and can incur provider charges. The application does not bypass publisher paywalls or Zotero permission prompts.
+The server listens on `127.0.0.1` only, validates `Host`, `Origin`, and a per-process CSRF token on write requests, and exposes only known static routes. Model text requests use the endpoint configured in Settings and can incur provider charges. OpenAlex queries contain the search topic or DOI and require no account. OA download accepts only validated public HTTPS PDFs. The application does not bypass publisher paywalls or Zotero permission prompts.
 
 The optional `data/seed.json` and `data/guides.json` files are read on first startup if present. Their shapes are shown in [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md).
 

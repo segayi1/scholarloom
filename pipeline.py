@@ -188,6 +188,117 @@ def extract_text(path: str | Path) -> str:
     raise ValueError("仅支持 PDF 和 EPUB 文件。")
 
 
+def extract_pdf_pages(path: str | Path, max_pages: int = 60) -> tuple[str, int]:
+    """Return page-labelled text for grounded Q&A."""
+    if fitz is None:
+        raise RuntimeError("未安装 PyMuPDF，无法读取 PDF")
+    doc = fitz.open(Path(path))
+    try:
+        count = min(doc.page_count, max(1, min(int(max_pages), 60)))
+        chunks = []
+        for index in range(count):
+            page_text = doc.load_page(index).get_text("text").strip()
+            if page_text:
+                chunks.append(f"[Page {index + 1}]\n{page_text}")
+        return "\n\n".join(chunks), count
+    finally:
+        doc.close()
+
+
+def _openalex_json(url: str) -> dict[str, Any]:
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "ScholarLoom/1.3 (local academic discovery)"},
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        return json.loads(response.read(3_000_000))
+
+
+def _openalex_abstract(inverted: dict[str, list[int]] | None) -> str:
+    if not isinstance(inverted, dict):
+        return ""
+    words: dict[int, str] = {}
+    for word, positions in inverted.items():
+        if isinstance(positions, list):
+            for position in positions:
+                if isinstance(position, int):
+                    words[position] = str(word)
+    return " ".join(words[index] for index in sorted(words))[:2200]
+
+
+def _openalex_item(work: dict[str, Any]) -> dict[str, Any]:
+    authors = []
+    for authorship in work.get("authorships") or []:
+        name = str((authorship.get("author") or {}).get("display_name") or "").strip()
+        if name:
+            authors.append(name)
+    best = work.get("best_oa_location") or {}
+    primary = work.get("primary_location") or {}
+    open_access = work.get("open_access") or {}
+    doi = str(work.get("doi") or "").removeprefix("https://doi.org/").lower()
+    return {
+        "id": str(work.get("id") or "").rsplit("/", 1)[-1],
+        "title": str(work.get("display_name") or "Untitled").strip(),
+        "doi": doi,
+        "year": work.get("publication_year") or "",
+        "authors": authors,
+        "citedBy": int(work.get("cited_by_count") or 0),
+        "type": str(work.get("type") or "")[:80],
+        "abstract": _openalex_abstract(work.get("abstract_inverted_index")),
+        "sourceURL": str(primary.get("landing_page_url") or (f"https://doi.org/{doi}" if doi else work.get("id") or "")),
+        "pdfURL": str(best.get("pdf_url") or open_access.get("oa_url") or ""),
+        "isOpenAccess": bool(open_access.get("is_oa") and best.get("pdf_url")),
+    }
+
+
+def search_external_literature(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Search OpenAlex without requiring an API key."""
+    query = query.strip()
+    if len(query) < 2:
+        raise ValueError("请输入至少两个字符的主题词。")
+    params = urllib.parse.urlencode(
+        {
+            "search": query[:300],
+            "per-page": max(1, min(int(limit), 20)),
+            "select": "id,doi,display_name,publication_year,authorships,cited_by_count,"
+            "primary_location,best_oa_location,open_access,abstract_inverted_index,type",
+        }
+    )
+    try:
+        payload = _openalex_json("https://api.openalex.org/works?" + params)
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("OpenAlex 暂时无法连接，请检查网络后重试。") from exc
+    return [_openalex_item(work) for work in payload.get("results", []) if isinstance(work, dict)]
+
+
+def get_related_literature(doi: str, limit: int = 8) -> list[dict[str, Any]]:
+    """Use OpenAlex related-work links for paper-to-paper discovery."""
+    clean = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", doi.strip(), flags=re.I)
+    if not clean:
+        raise ValueError("该文献没有可用于关联推荐的 DOI。")
+    try:
+        seed = _openalex_json(
+            "https://api.openalex.org/works/https://doi.org/"
+            + urllib.parse.quote(clean, safe="/")
+            + "?select=id,related_works"
+        )
+        ids = [str(value).rsplit("/", 1)[-1] for value in seed.get("related_works") or []][: max(1, min(int(limit), 20))]
+        if not ids:
+            return []
+        params = urllib.parse.urlencode(
+            {
+                "filter": "openalex_id:" + "|".join(ids),
+                "per-page": len(ids),
+                "select": "id,doi,display_name,publication_year,authorships,cited_by_count,"
+                "primary_location,best_oa_location,open_access,abstract_inverted_index,type",
+            }
+        )
+        payload = _openalex_json("https://api.openalex.org/works?" + params)
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("OpenAlex 暂时无法连接，请检查网络后重试。") from exc
+    return [_openalex_item(work) for work in payload.get("results", []) if isinstance(work, dict)]
+
+
 def _clean_doi(value: str) -> str:
     value = value.rstrip(".,;:]>}").lower()
     while value.endswith(")") and value.count(")") > value.count("("):

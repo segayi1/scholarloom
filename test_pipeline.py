@@ -141,6 +141,24 @@ class InspectFileTests(unittest.TestCase):
         self.assertEqual(len(text), 18_000)
         pdf_text.assert_called_once()
 
+    def test_openalex_record_reconstructs_abstract_and_oa_link(self):
+        item = pipeline._openalex_item({
+            "id": "https://openalex.org/W123",
+            "display_name": "Antibody epitope fixture",
+            "doi": "https://doi.org/10.1234/FIXTURE",
+            "publication_year": 2025,
+            "cited_by_count": 9,
+            "authorships": [{"author": {"display_name": "Ada Example"}}],
+            "abstract_inverted_index": {"Epitopes": [0], "matter.": [1]},
+            "open_access": {"is_oa": True, "oa_url": "https://example.org/paper.pdf"},
+            "best_oa_location": {"pdf_url": "https://example.org/paper.pdf"},
+            "primary_location": {"landing_page_url": "https://example.org/record"},
+        })
+        self.assertEqual(item["doi"], "10.1234/fixture")
+        self.assertEqual(item["abstract"], "Epitopes matter.")
+        self.assertTrue(item["isOpenAccess"])
+        self.assertEqual(item["authors"], ["Ada Example"])
+
 
 if __name__ == "__main__":
     unittest.main()

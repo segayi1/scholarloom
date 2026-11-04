@@ -90,6 +90,81 @@ class WorkbenchServerTests(unittest.TestCase):
         row = next(row for row in self.app.documents(True) if row["key"] == "LANG1")
         self.assertEqual(row["summaryLanguage"], "en")
 
+    def test_prompt_presets_persist_and_reset(self):
+        custom = {"methodology": {"prompt_en": "Custom audit prompt", "prompt_zh": "自定义审查提示词"}}
+        self.app.set_prompt_presets(custom)
+        self.assertEqual(self.app.get_kv("settings")["prompt_presets"]["methodology"]["prompt_en"], "Custom audit prompt")
+        self.assertEqual(self.app.prompt_text("methodology", "en"), "Custom audit prompt")
+        self.app.reset_prompt_presets()
+        self.assertEqual(self.app.prompt_text("methodology", "en"), server.DEFAULT_PROMPT_PRESETS["methodology"]["prompt_en"])
+
+    def test_paper_chat_uses_evidence_prompt_and_effective_language(self):
+        self.app.settings.update(summary_language="auto", ui_language="en")
+        self.app.save_document({"key": "CHAT1", "title": "Fixture paper", "_text": "Evidence on page one.", "flags": []})
+        with patch.object(self.app, "call_model", return_value="Supported [Page 1]") as call_model:
+            result = self.app.paper_chat("CHAT1", "What did the study show?", "methodology")
+        messages = call_model.call_args.args[0]
+        self.assertEqual(result["language"], "en")
+        self.assertEqual(result["answer"], "Supported [Page 1]")
+        self.assertIn("[Page N]", messages[0]["content"])
+        self.assertIn("study design", messages[0]["content"])
+        self.assertEqual(messages[1]["role"], "user")
+
+    def test_compare_synthesis_uses_structured_cards(self):
+        self.app.settings.update(summary_language="zh", ui_language="zh")
+        for key, finding in (("CMP1", "Finding one"), ("CMP2", "Finding two")):
+            self.app.save_document({"key": key, "title": key, "findings": [finding], "flags": []})
+        with patch.object(self.app, "call_model", return_value="## 跨文献综合\n证据") as call_model:
+            result = self.app.compare_synthesis(["CMP1", "CMP2"])
+        material = call_model.call_args.args[0][1]["content"]
+        self.assertIn("Finding one", material)
+        self.assertIn("Finding two", material)
+        self.assertEqual(result["language"], "zh")
+
+    def test_mini_review_supports_twelve_papers_focus_and_source_map(self):
+        self.app.settings.update(summary_language="en", ui_language="en")
+        for index in range(1, 7):
+            row = {"key": f"REV{index}", "title": f"Paper {index}", "flags": []}
+            if index < 6:
+                row["findings"] = [f"Finding {index}"]
+            self.app.save_document(row)
+        with patch.object(self.app, "call_model", return_value="Supported [P1].") as call_model:
+            result = self.app.compare_synthesis([f"REV{index}" for index in range(1, 7)], "Compare evidence")
+        system = call_model.call_args.args[0][0]["content"]
+        user = call_model.call_args.args[0][1]["content"]
+        self.assertIn("250–500 words", system)
+        self.assertIn("not-X-but-Y", system)
+        self.assertIn("Focus question: Compare evidence", user)
+        self.assertIn('"hasStructuredCard": false', user)
+        self.assertEqual([source["id"] for source in result["sources"]], ["P1", "P2", "P3", "P4", "P5", "P6"])
+
+    def test_document_state_merges_without_losing_private_text(self):
+        self.app.save_document({"key": "READ1", "title": "Reading fixture", "_text": "private evidence", "flags": []})
+        saved = self.app.set_document_state("READ1", "reading", "Check the control arm")
+        private = next(row for row in self.app.documents(True) if row["key"] == "READ1")
+        self.assertEqual(saved["readingStatus"], "reading")
+        self.assertEqual(saved["readingNote"], "Check the control arm")
+        self.assertEqual(private["_text"], "private evidence")
+        with self.assertRaises(ValueError):
+            self.app.set_document_state("READ1", "invalid", "")
+
+    def test_legacy_document_added_time_comes_from_import_job(self):
+        self.app.save_document({"key": "OLDADD", "title": "Legacy record", "flags": []})
+        job = self.add_job(self.input / "legacy.pdf", status="imported")
+        with self.app.lock, self.app.db:
+            self.app.db.execute("UPDATE jobs SET item_key='OLDADD' WHERE id=?", (job["id"],))
+        document = next(row for row in self.app.state()["documents"] if row["key"] == "OLDADD")
+        self.assertGreater(document["addedAt"], 0)
+
+    def test_external_recommend_rejects_private_pdf_url(self):
+        with self.assertRaises(ValueError):
+            self.app.ingest_external_pdf("https://127.0.0.1/private.pdf", "Private")
+
+    def test_external_recommend_uses_openalex_helper(self):
+        fixture = [{"title": "External fixture", "doi": "10.1/example"}]
+        with patch("pipeline.search_external_literature", return_value=fixture):
+            self.assertEqual(self.app.external_recommend("search", "epitope"), fixture)
+
     def test_model_endpoint_rejects_external_http_and_userinfo(self):
         for value in ("http://example.org/v1", "https://user:pass@example.org/v1"):
             with self.subTest(value=value), self.assertRaises(ValueError):
