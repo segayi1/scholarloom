@@ -37,6 +37,7 @@ class WorkbenchServerTests(unittest.TestCase):
         with self.app.lock:
             return dict(self.app.db.execute("SELECT * FROM jobs WHERE path=?", (str(path),)).fetchone())
 
+    @unittest.skipUnless(os.name == "nt", "Windows DPAPI only")
     def test_dpapi_credentials_roundtrip_never_writes_plaintext(self):
         secret = "model-key-do-not-leak-123"
 
@@ -51,8 +52,7 @@ class WorkbenchServerTests(unittest.TestCase):
             self.app.save_credentials()
             stored = (self.app.data / "secrets.bin").read_bytes()
             self.assertNotIn(secret.encode(), stored)
-            if os.name == "nt":
-                self.assertEqual(self.app.read_credentials()["model_key"], secret)
+            self.assertEqual(self.app.read_credentials()["model_key"], secret)
 
     @unittest.skipUnless(os.name == "nt", "Windows DPAPI only")
     def test_windows_credentials_are_dpapi_protected(self):
