@@ -14,6 +14,8 @@
     <img src="https://img.shields.io/badge/local--first-yes-d7b76d" alt="Local-first">
     <a href="LICENSE"><img src="https://img.shields.io/github/license/segayi1/scholarloom?color=c9705b" alt="MIT License"></a>
   </p>
+
+  <p><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 </div>
 
 ScholarLoom watches the places where papers actually arrive, verifies each file before import, and keeps Zotero as the source of truth. Its reading desk then connects summaries, full-text questions, comparisons, and new-paper discovery without sending your library to a hosted ScholarLoom account.
