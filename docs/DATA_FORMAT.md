@@ -11,6 +11,7 @@ Settings are stored in the local SQLite database and edited from the workbench S
 | `model_url` | `https://api.openai.com/v1` | Chat Completions-compatible API base URL |
 | `model_name` | empty | Model identifier |
 | `auto_summary` | `true` | Generate a reading card after import |
+| `summary_language` | `zh` | Language for new or regenerated reading cards: `zh` or `en` |
 
 The API key is stored separately in `data/secrets.bin` and is never returned by the state endpoint. External model URLs must use HTTPS; HTTP is accepted only for `localhost`, `127.0.0.1`, or `::1`.
 

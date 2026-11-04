@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.2.0 - 2026-11-03
+
+### Changed
+
+- New imports and manually regenerated reading cards now follow the selected English or Simplified Chinese interface language. Existing summaries remain unchanged.
+- Renamed the project to ScholarLoom and added the subtitle **automatic intake, AI reading cards, and semantic matching**.
+- Reframed search documentation around explainable bilingual synonym matching across titles, reading cards, research questions, methods, findings, and use cases.
+
 ## 1.1.0 - 2026-11-03
 
 ### Added

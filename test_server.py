@@ -73,6 +73,23 @@ class WorkbenchServerTests(unittest.TestCase):
         self.assertNotIn("C:/private/file.pdf", encoded)
         self.assertIn("has_model_key", encoded)
 
+    def test_summary_language_controls_generated_content(self):
+        self.app.settings["summary_language"] = "en"
+        self.app.save_document({"key": "LANG1", "title": "Fixture paper", "kind": "journalArticle",
+                                "_abstract": "A controlled fixture abstract.", "flags": []})
+        answer = json.dumps({"zhTitle": "Fixture paper", "oneSentence": "English summary.",
+                             "question": "Question", "method": "Method", "studyModel": "Model",
+                             "findings": [], "useCase": "Use", "limitations": "",
+                             "keywords": [], "subtopics": [], "category": server.CATEGORIES[0],
+                             "studyType": "Journal article"})
+        with patch.object(self.app, "call_model", return_value=answer) as call_model:
+            self.app.summarize("LANG1")
+        messages = call_model.call_args.args[0]
+        self.assertIn("written in English", messages[0]["content"])
+        self.assertIn('"source_basis": "Publication abstract"', messages[1]["content"])
+        row = next(row for row in self.app.documents(True) if row["key"] == "LANG1")
+        self.assertEqual(row["summaryLanguage"], "en")
+
     def test_model_endpoint_rejects_external_http_and_userinfo(self):
         for value in ("http://example.org/v1", "https://user:pass@example.org/v1"):
             with self.subTest(value=value), self.assertRaises(ValueError):

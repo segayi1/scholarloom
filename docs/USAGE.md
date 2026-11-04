@@ -2,11 +2,13 @@
 
 ## Daily Workflow
 
-Download a PDF or EPUB into a watched folder. The workbench waits until the file stops changing, then shows its progress in the inbox. Valid journal articles and patents are imported into Zotero, placed in a topic collection, and linked to a stable local copy. If a model is configured, a Chinese reading card is generated from the publisher abstract or a bounded local text excerpt.
+Download a PDF or EPUB into a watched folder. The workbench waits until the file stops changing, then shows its progress in the inbox. Valid journal articles and patents are imported into Zotero, placed in a topic collection, and linked to a stable local copy. If a model is configured, a reading card is generated from the publisher abstract or a bounded local text excerpt.
 
-Use the `Search and guides` tab to search titles, authors, DOI, patent number, Chinese reading cards, and keywords. Select two or three cards for a side-by-side comparison. `Regenerate summary` retries only the current reading card.
+Use the `Search and guides` tab to search titles, authors, DOI, patent number, reading cards, and keywords. Select two or three cards for a side-by-side comparison. `Regenerate summary` retries only the current reading card.
 
-Use the `EN` / `中文` button in the header to switch the interface language. The choice is stored in the browser; bibliographic data and generated reading cards keep their original language.
+Use the `EN` / `中文` button in the header to switch the interface language. The choice is stored in the browser and applies to future automatic summaries and manual regenerations. Selecting `EN` therefore produces English reading cards; selecting `中文` produces Simplified Chinese reading cards. Existing reading cards remain unchanged until regenerated, and bibliographic data keeps its source language.
+
+Search uses weighted local matching across bibliographic fields and reading cards. Built-in Chinese/English synonym groups connect related research terms without sending queries to another service.
 
 ## Review Queue
 

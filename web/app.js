@@ -3,7 +3,7 @@
   const LANGUAGE_KEY = 'literature-workbench-language';
   let uiLanguage = (() => { try { return localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'zh'; } catch { return 'zh'; } })();
   const zhToEn = new Map(Object.entries({
-    '本地文献工作台': 'Local Literature Workbench',
+    '自动收文 · AI 速读 · 语义匹配，把散落的文献编织成可检索的私人知识库。': 'Automatic intake · AI reading cards · semantic matching. Weave scattered papers into a searchable private knowledge base.',
     '下载、整理、速读与 Zotero 文献库在这里衔接。': 'Download, organize, and read literature with Zotero in one place.',
     '正在连接本地服务…': 'Connecting to the local service...',
     '工作台页面': 'Workbench pages',
@@ -30,7 +30,7 @@
     '等待 Zotero': 'Waiting for Zotero',
     '生成摘要中': 'Generating summary',
     '快速检索': 'Quick search',
-    '搜索已有和新导入文献的题名、中文摘要、作者与关键词。': 'Search titles, reading cards, authors, and keywords across the library.',
+    '搜索已有和新导入文献的题名、摘要、作者与关键词。': 'Search titles, reading cards, authors, and keywords across the library.',
     '打开文献检索 →': 'Open literature search →',
     '输入题名、主题或关键词': 'Enter a title, topic, or keyword',
     '快速检索文献': 'Quick literature search',
@@ -65,18 +65,18 @@
     '文件夹路径（每行一个绝对路径）': 'Folder paths (one absolute path per line)',
     '例如：C:\\Users\\你\\Downloads': 'Example: C:\\Users\\you\\Downloads',
     '打开文献备份文件夹': 'Open literature backup folder',
-    '连接后本地工作台可读写你的 Zotero 文献库。首次请在 Zotero 权限弹窗选择 Always Allow（始终允许），即可持续自动导入。之后可在 Zotero 高级设置撤销授权。': 'After connecting, the workbench can read and write your Zotero library. Choose Always Allow in Zotero once to support automatic imports. You can revoke access later in Zotero Advanced settings.',
+    '连接后 ScholarLoom 可读写你的 Zotero 文献库。首次请在 Zotero 权限弹窗选择 Always Allow（始终允许），即可持续自动导入。之后可在 Zotero 高级设置撤销授权。': 'After connecting, ScholarLoom can read and write your Zotero library. Choose Always Allow in Zotero once to support automatic imports. You can revoke access later in Zotero Advanced settings.',
     '连接 Zotero': 'Connect Zotero',
-    '中文速读模型': 'Reading-card model',
+    '摘要与速读模型': 'Reading-card model',
     'API 地址': 'API URL',
     '模型名称': 'Model name',
     '填写模型名称': 'Enter a model name',
     '留空表示保留当前密钥': 'Leave blank to keep the current key',
-    '导入后自动生成中文速读': 'Generate reading cards after import',
-    '只会向你填写的模型发送当前文献的摘要或正文提取文本，用于生成中文速读。': 'Only the current document abstract or extracted text excerpt is sent to the model you configure.',
+    '导入后按当前界面语言生成速读': 'Generate reading cards in the selected interface language after import',
+    '只会向你填写的模型发送当前文献的摘要或正文提取文本，用于生成对应语言的速读；语言由右上角切换器决定。': 'Only the current document abstract or extracted text excerpt is sent to the model you configure. The language switcher in the header controls the output language.',
     '保存全部设置': 'Save all settings',
     '测试摘要模型': 'Test reading-card model',
-    '本地工作台 · 文献原件保存在本机。Zotero 定位通过 Zotero 链接打开。': 'Local workbench · Full texts stay on this computer. Zotero links open the matching item.',
+    'ScholarLoom · 文献原件保存在本机。Zotero 定位通过 Zotero 链接打开。': 'ScholarLoom · Full texts stay on this computer. Zotero links open the matching item.',
     '已授权，可持续导入': 'Authorized for continuous import',
     '尚未授权': 'Not authorized',
     '本机已保存密钥；留空可保留当前密钥。': 'A model key is saved locally. Leave the field blank to keep it.',
@@ -94,9 +94,9 @@
     '已配置': 'Configured',
     '未配置': 'Not configured',
     '未授权': 'Not authorized',
-    '正在生成中文摘要': 'Generating reading card',
-    '中文摘要已完成': 'Reading card ready',
-    '中文摘要生成失败': 'Reading-card generation failed',
+    '正在生成摘要': 'Generating reading card',
+    '摘要已完成': 'Reading card ready',
+    '摘要生成失败': 'Reading-card generation failed',
     '状态未知': 'Unknown status',
     '当前没有匹配记录。': 'No matching records.',
     '未命名文件': 'Unnamed file',
@@ -119,7 +119,7 @@
     '年份未详': 'Year unknown',
     '来源未详': 'Source unknown',
     '暂无可读摘要。': 'No reading summary yet.',
-    '暂无中文摘要。': 'No reading summary yet.',
+    '暂无摘要。': 'No reading summary yet.',
     '在 Zotero 定位 ↗': 'Locate in Zotero ↗',
     '查看来源摘要 ↗': 'View source abstract ↗',
     '打开本地全文': 'Open local full text',
@@ -154,6 +154,7 @@
     '最多比较三篇，请先移除一篇。': 'You can compare up to three papers. Remove one first.',
     '摘要模型连接成功。': 'Reading-card model connected.',
     '已导入 Zotero，并生成中文速读': 'Imported to Zotero with a reading card',
+    '已导入 Zotero，并生成速读': 'Imported to Zotero with a reading card',
     '相同 DOI 已收录；中文速读已补全': 'Same DOI already present; reading card completed',
     '清单内中文速读已全部补全': 'All reading cards in this batch are complete',
     '首页未发现 DOI；不能仅凭文件名确认期刊论文。': 'No DOI found on the first page. A filename alone is not enough to confirm a journal article.',
@@ -178,7 +179,7 @@
     [/^无法加载本地工作台：(.*)。请确认本地服务已启动后重试。$/, m => `Unable to load the local workbench: ${m[1]}. Confirm that the local service is running and try again.`],
     [/^(Zotero|持续授权|文件监看|摘要模型)：(正常|未连接|未授权|已暂停|运行中|未运行|已配置|未配置)$/, m => `${m[1] === 'Zotero' ? 'Zotero' : m[1] === '持续授权' ? 'Authorization' : m[1] === '文件监看' ? 'Folder monitoring' : 'Reading-card model'}: ${m[2] === '正常' ? 'Ready' : m[2] === '未连接' ? 'Disconnected' : m[2] === '未授权' ? 'Not authorized' : m[2] === '已暂停' ? 'Paused' : m[2] === '运行中' ? 'Running' : m[2] === '未运行' ? 'Not running' : m[2] === '已配置' ? 'Configured' : 'Not configured'}`],
     [/^(排队中|处理中|可导入|待核对|已排除|已导入|重复|已忽略|出错|等待 Zotero|生成摘要中)( · .*)$/, m => `${zhToEn.get(m[1])}${m[2]}`],
-    [/^(正在生成中文摘要|中文摘要已完成|中文摘要生成失败)[：:](.*)$/, m => `${m[1] === '正在生成中文摘要' ? 'Generating reading card' : m[1] === '中文摘要已完成' ? 'Reading card ready' : 'Reading-card generation failed'}: ${zhToEn.get(m[2]) || m[2]}`]
+    [/^(正在生成中文摘要|中文摘要已完成|中文摘要生成失败|正在生成摘要|摘要已完成|摘要生成失败)[：:](.*)$/, m => `${['正在生成中文摘要','正在生成摘要'].includes(m[1]) ? 'Generating reading card' : ['中文摘要已完成','摘要已完成'].includes(m[1]) ? 'Reading card ready' : 'Reading-card generation failed'}: ${zhToEn.get(m[2]) || m[2]}`]
   ];
   function localizeValue(value) {
     const raw = text(value);
@@ -215,7 +216,7 @@
   }
   function applyLanguage() {
     document.documentElement.lang = uiLanguage === 'en' ? 'en' : 'zh-CN';
-    document.title = uiLanguage === 'en' ? 'Local Literature Workbench' : '本地文献工作台';
+    document.title = 'ScholarLoom';
     const toggle = el('language-toggle');
     toggle.textContent = uiLanguage === 'en' ? '中文' : 'EN';
     toggle.setAttribute('aria-label', uiLanguage === 'en' ? '切换到中文' : 'Switch to English');
@@ -223,13 +224,18 @@
     if (uiLanguage !== 'en') return;
     localizeNode(document.body);
   }
-  function setLanguage(language) {
+  async function setLanguage(language) {
     uiLanguage = language === 'en' ? 'en' : 'zh';
     try { localStorage.setItem(LANGUAGE_KEY, uiLanguage); } catch {}
+    try {
+      if (state.snapshot?.csrf) await post('/api/settings', {summary_language: uiLanguage});
+    } catch (error) {
+      toast(`无法同步摘要语言：${error.message}`);
+    }
     location.reload();
   }
   const el = id => document.getElementById(id);
-  const state = { snapshot: null, docsSignature: '', summarySignature: '', view: 'home', category: '', kind: '', year: '', studyType: '', query: '', routeKeys: null, routeName: '', focusKey: null, comparison: [], limit: 24, jobsFilter: 'all', toastTimer: 0 };
+  const state = { snapshot: null, docsSignature: '', summarySignature: '', languageSyncPending: false, view: 'home', category: '', kind: '', year: '', studyType: '', query: '', routeKeys: null, routeName: '', focusKey: null, comparison: [], limit: 24, jobsFilter: 'all', toastTimer: 0 };
   const statuses = [['queued','排队中'],['processing','处理中'],['ready','可导入'],['review','待核对'],['excluded','已排除'],['imported','已导入'],['duplicate','重复'],['ignored','已忽略'],['error','出错'],['waiting_zotero','等待 Zotero'],['summarizing','生成摘要中']];
   const statusNames = Object.fromEntries(statuses);
   const safeArray = value => Array.isArray(value) ? value : [];
@@ -253,6 +259,15 @@
       el('load-error').hidden = true;
       const docsSignature = JSON.stringify([next.documents,next.guides,next.routes]);
       state.snapshot = next;
+      if (next.settings?.summary_language !== uiLanguage && !state.languageSyncPending) {
+        state.languageSyncPending = true;
+        try {
+          await post('/api/settings', {summary_language: uiLanguage});
+          next.settings.summary_language = uiLanguage;
+        } catch {} finally {
+          state.languageSyncPending = false;
+        }
+      }
       renderOverview(); renderHealth(); renderJobs();
       if (docsSignature !== state.docsSignature) { state.docsSignature = docsSignature; renderLibraryData(); }
       if (state.view === 'compare') renderComparison();
@@ -301,7 +316,7 @@
   function renderSummaryStatus() {
     const summary=state.snapshot?.health?.summary, box=el('summary-status');
     if(!summary||!['running','done','error'].includes(summary.status)){box.hidden=true;box.textContent='';return;}
-    const labels={running:'正在生成中文摘要',done:'中文摘要已完成',error:'中文摘要生成失败'};
+    const labels={running:'正在生成摘要',done:'摘要已完成',error:'摘要生成失败'};
     const message=text(summary.message).trim();
     box.className=`summary-status ${summary.status}`;
     box.textContent=message?`${labels[summary.status]}：${message}`:labels[summary.status];
@@ -336,7 +351,7 @@
   function renderLibraryData(){const docs=safeArray(state.snapshot?.documents), guides=safeArray(state.snapshot?.guides), routes=safeArray(state.snapshot?.routes);for(const name of ['category','year','studyType']){const select=el(name),keep=state[name];select.replaceChildren(new Option(name==='category'?'全部主题':name==='year'?'全部年份':'全部研究形式',''));const values=name==='category'?guides.map(x=>x.name).filter(Boolean):name==='year'?[...new Set(docs.map(x=>x.year).filter(Boolean))].sort().reverse():[...new Set(docs.map(x=>x.studyType).filter(Boolean))].sort();values.forEach(value=>select.add(new Option(value,value)));select.value=values.includes(keep)?keep:'';state[name]=select.value;}renderTopics();renderResults();applyLanguage();}
   function renderTopics(){const guides=safeArray(state.snapshot?.guides),routes=safeArray(state.snapshot?.routes),docs=safeArray(state.snapshot?.documents);el('topic-grid').innerHTML=guides.map(guide=>`<button class="topic-item" data-category="${esc(guide.name)}">${esc(guide.name)}<small>${docs.filter(row=>row.category===guide.name).length} 篇 · 查看导读</small></button>`).join('')||'<span class="muted">暂无主题导读</span>';el('question-grid').innerHTML=routes.map((route,index)=>`<button class="question-item" data-route="${index}">${esc(route.title)}<small>${esc(route.description||'')} · ${safeArray(route.keys).length} 篇</small></button>`).join('')||'<span class="muted">暂无问题路线</span>';}
   function safeGuide(guide){const keys=safeArray(guide.reading), docs=byKey();return `<div class="guide"><h3>${esc(guide.name)}</h3><p>${esc(guide.summary||'')}</p><ul>${safeArray(guide.insights).map(item=>`<li>${esc(item)}</li>`).join('')}</ul><div class="reading-path">${keys.filter(key=>docs[key]).map((key,index)=>`<button class="reading-step" data-focus="${esc(key)}">${index+1}. ${esc(docs[key].zhTitle||docs[key].title||key)}</button>`).join('')}</div></div>`;}
-  function cardMarkup(row){const key=esc(row.key),docs=byKey(),source=safeURL(row.sourceURL),attachment=safeURL(row.attachmentURL,true),locate=row.key&&/^[A-Za-z0-9]+$/.test(row.key)?`zotero://select/library/items/${encodeURIComponent(row.key)}`:'';const title=row.zhTitle||row.title||'题名未提供';const comparison=state.comparison.includes(row.key);return `<article class="card ${comparison?'selected':''}" id="doc-${key}"><div class="meta"><span>${esc(row.year||'年份未详')}</span>${row.studyType?`<span class="pill">${esc(row.studyType)}</span>`:''}${row.category?`<span class="pill">${esc(row.category)}</span>`:''}<span>${esc(row.source||'来源未详')}</span>${list(row.flags).map(flag=>`<span class="pill flag">${esc(text(flag).split('/').pop())}</span>`).join('')}</div><h3 class="zh-title">${esc(title)}</h3>${row.title&&row.title!==title?`<p class="en-title" lang="en">${esc(row.title)}</p>`:''}<p class="one">${esc(row.oneSentence||row.summary||'暂无中文摘要。')}</p>${list(row.findings).length?`<ul class="findings">${list(row.findings).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}<div class="keywords">${[...list(row.subtopics),...list(row.keywords)].slice(0,12).map(item=>`<span class="keyword">${esc(item)}</span>`).join('')}</div><details><summary>研究问题、方法与使用场景</summary><dl>${row.authors?`<dt>作者</dt><dd>${esc(row.authors)}</dd>`:''}${row.question?`<dt>研究问题</dt><dd>${esc(row.question)}</dd>`:''}${row.method||row.studyModel?`<dt>方法与对象</dt><dd>${esc(row.method||'')}${row.studyModel?`<br>研究模型：${esc(row.studyModel)}`:''}</dd>`:''}${row.useCase?`<dt>可用于</dt><dd>${esc(row.useCase)}</dd>`:''}${row.limitations?`<dt>已知边界</dt><dd>${esc(row.limitations)}</dd>`:''}</dl><div class="source-note">摘要依据：${esc(row.basis||'来源未提供')}${row.identifier?` · ${esc(row.identifier)}`:''}</div><div class="related"><strong class="source-note">关联文献</strong>${list(row.related).map(rel=>docs[rel]?`<button data-focus="${esc(rel)}">${esc(docs[rel].zhTitle||docs[rel].title||rel)}</button>`:'').join('')}</div></details><div class="links">${locate?`<a href="${locate}">在 Zotero 定位 ↗</a>`:''}${attachment?`<a href="${esc(attachment)}">${esc(row.attachmentLabel||'打开附件')}</a>`:''}${source?`<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">查看来源摘要 ↗</a>`:''}<label class="compare-label"><input type="checkbox" class="compare-box" data-key="${key}" ${comparison?'checked':''} aria-label="加入对比：${esc(title)}">加入对比</label><button class="text-button" data-action="summarize" data-key="${key}">重新生成摘要</button></div></article>`;}
+  function cardMarkup(row){const key=esc(row.key),docs=byKey(),source=safeURL(row.sourceURL),attachment=safeURL(row.attachmentURL,true),locate=row.key&&/^[A-Za-z0-9]+$/.test(row.key)?`zotero://select/library/items/${encodeURIComponent(row.key)}`:'';const title=row.zhTitle||row.title||'题名未提供';const comparison=state.comparison.includes(row.key);return `<article class="card ${comparison?'selected':''}" id="doc-${key}"><div class="meta"><span>${esc(row.year||'年份未详')}</span>${row.studyType?`<span class="pill">${esc(row.studyType)}</span>`:''}${row.category?`<span class="pill">${esc(row.category)}</span>`:''}<span>${esc(row.source||'来源未详')}</span>${list(row.flags).map(flag=>`<span class="pill flag">${esc(text(flag).split('/').pop())}</span>`).join('')}</div><h3 class="zh-title">${esc(title)}</h3>${row.title&&row.title!==title?`<p class="en-title" lang="en">${esc(row.title)}</p>`:''}<p class="one">${esc(row.oneSentence||row.summary||'暂无摘要。')}</p>${list(row.findings).length?`<ul class="findings">${list(row.findings).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}<div class="keywords">${[...list(row.subtopics),...list(row.keywords)].slice(0,12).map(item=>`<span class="keyword">${esc(item)}</span>`).join('')}</div><details><summary>研究问题、方法与使用场景</summary><dl>${row.authors?`<dt>作者</dt><dd>${esc(row.authors)}</dd>`:''}${row.question?`<dt>研究问题</dt><dd>${esc(row.question)}</dd>`:''}${row.method||row.studyModel?`<dt>方法与对象</dt><dd>${esc(row.method||'')}${row.studyModel?`<br>研究模型：${esc(row.studyModel)}`:''}</dd>`:''}${row.useCase?`<dt>可用于</dt><dd>${esc(row.useCase)}</dd>`:''}${row.limitations?`<dt>已知边界</dt><dd>${esc(row.limitations)}</dd>`:''}</dl><div class="source-note">摘要依据：${esc(row.basis||'来源未提供')}${row.identifier?` · ${esc(row.identifier)}`:''}</div><div class="related"><strong class="source-note">关联文献</strong>${list(row.related).map(rel=>docs[rel]?`<button data-focus="${esc(rel)}">${esc(docs[rel].zhTitle||docs[rel].title||rel)}</button>`:'').join('')}</div></details><div class="links">${locate?`<a href="${locate}">在 Zotero 定位 ↗</a>`:''}${attachment?`<a href="${esc(attachment)}">${esc(row.attachmentLabel||'打开附件')}</a>`:''}${source?`<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">查看来源摘要 ↗</a>`:''}<label class="compare-label"><input type="checkbox" class="compare-box" data-key="${key}" ${comparison?'checked':''} aria-label="加入对比：${esc(title)}">加入对比</label><button class="text-button" data-action="summarize" data-key="${key}">重新生成摘要</button></div></article>`;}
   function renderResults(){if(!state.snapshot)return;const rows=filteredDocs(),total=safeArray(state.snapshot.documents).length;el('result-count').textContent=`找到 ${rows.length} / ${total} 条文献${state.focusKey?' · 当前定位文献':''}`;el('results').innerHTML=rows.length?rows.slice(0,state.limit).map(cardMarkup).join(''):'<div class="empty">没有找到匹配文献，可尝试缩短问题或清除筛选条件。</div>';el('load-more').hidden=rows.length<=state.limit;const guide=safeArray(state.snapshot.guides).find(item=>item.name===state.category);el('guide-panel').hidden=!guide;el('guide-panel').innerHTML=guide?safeGuide(guide):'';el('active-route').hidden=!state.routeName&&!state.focusKey;el('active-route').textContent=state.routeName?`阅读路线：${state.routeName}`:state.focusKey?'已定位文献；点击“重置”返回全部文献。':'';renderCompareBar();applyLanguage();}
   function showDocument(key){Object.assign(state,{focusKey:key,routeKeys:null,routeName:'',category:'',kind:'',year:'',studyType:'',query:'',limit:24});syncFilters();setView('library');renderResults();window.scrollTo({top:0,behavior:'smooth'});}
   function syncFilters(){for(const name of ['category','kind','year','studyType'])el(name).value=state[name]||'';el('query').value=state.query;}

@@ -21,5 +21,8 @@ assert.equal(rank('zotero')[0], undefined, 'Attachment URLs must not count as se
 assert.equal(rank('CN123456789A')[0].row.key, 'P1');
 assert.equal(rank('sdfqzzzxxyy').length, 0);
 assert(html.includes('id="language-toggle"'), 'Language switcher must remain in the page header');
+assert(html.includes('<h1>ScholarLoom</h1>'), 'Product name must appear in the page header');
+assert(html.includes('自动收文 · AI 速读 · 语义匹配'), 'Header must explain the core capabilities');
+assert(source.includes("document.title = 'ScholarLoom'"), 'Document title must use the product name');
 assert(source.includes("localStorage.getItem(LANGUAGE_KEY)"), 'Language preference must persist');
 console.log('Web search ranking checks passed');

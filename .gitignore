@@ -9,6 +9,7 @@ data/instance.json
 __pycache__/
 .pytest_cache/
 .playwright-cli/
+output/
 .venv/
 .env
 .DS_Store
