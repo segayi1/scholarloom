@@ -1,3 +1,4 @@
+import urllib.error
 import tempfile
 import unittest
 from pathlib import Path
@@ -96,7 +97,7 @@ class InspectFileTests(unittest.TestCase):
 
     @patch("pipeline._crossref_title")
     @patch("pipeline._pdf_text")
-    def test_author_manuscript_can_resolve_doi_by_exact_title(self, pdf_text, crossref_title):
+    def test_title_only_journal_match_waits_for_manual_confirmation(self, pdf_text, crossref_title):
         page = "B-cell Epitopes: Discontinuity and Conformational Analysis\nSaba Ferdous et al."
         pdf_text.return_value = (page, page)
         crossref_title.return_value = {
@@ -105,9 +106,10 @@ class InspectFileTests(unittest.TestCase):
             "title": ["B-cell epitopes: Discontinuity and conformational analysis"],
         }
         result = pipeline.inspect_file(self.file("author-manuscript.pdf"))
-        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["status"], "review")
         self.assertEqual(result["metadata"]["DOI"], "10.1016/j.molimm.2019.09.014")
         self.assertIn("题名检索", result["basis"])
+        self.assertIn("没有 DOI", result["reason"])
 
     @patch("pipeline._crossref_title")
     @patch("pipeline._crossref")
@@ -126,9 +128,54 @@ class InspectFileTests(unittest.TestCase):
             "title": ["A journal article about cell signaling"],
         }
         result = pipeline.inspect_file(self.file("preprint.pdf"))
-        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["status"], "review")
         self.assertEqual(result["metadata"]["DOI"], "10.1234/published")
         self.assertIn("题名检索", result["basis"])
+
+    @patch("pipeline._crossref_title")
+    @patch("pipeline._pdf_text")
+    def test_lecture_slides_stop_before_crossref_lookup(self, pdf_text, crossref_title):
+        page = "Lecture 4: Antibody structure\nLearning objectives\nOutline\nSlides for IMM250"
+        pdf_text.return_value = (page, page)
+        result = pipeline.inspect_file(self.file("IMM250 lecture 4.pdf"))
+        self.assertEqual(result["status"], "excluded")
+        self.assertIn("教学课件", result["reason"])
+        crossref_title.assert_not_called()
+
+    @patch("pipeline._crossref_title")
+    @patch("pipeline._pdf_text")
+    def test_defense_ppt_is_directly_excluded(self, pdf_text, crossref_title):
+        page = "博士学位论文开题答辩报告\n汇报人：张三\n指导教师：李四教授\n2024年春季学期"
+        pdf_text.return_value = (page, page)
+        result = pipeline.inspect_file(self.file("毕业答辩汇报.pptx.pdf"))
+        self.assertEqual(result["status"], "excluded")
+        self.assertIn("答辩PPT", result["reason"])
+        crossref_title.assert_not_called()
+
+    @patch("pipeline._crossref_title")
+    @patch("pipeline._pdf_text")
+    def test_lesson_plan_is_directly_excluded(self, pdf_text, crossref_title):
+        page = "《免疫学》课程教案\n教学设计与授课方案\n教学目标：理解抗原递呈机制"
+        pdf_text.return_value = (page, page)
+        result = pipeline.inspect_file(self.file("免疫学教案.pdf"))
+        self.assertEqual(result["status"], "excluded")
+        self.assertIn("课程教案", result["reason"])
+        crossref_title.assert_not_called()
+
+    @patch("pipeline._crossref_title")
+    @patch("pipeline._pdf_text")
+    def test_lncs_paper_is_not_falsely_excluded_as_lecture(self, pdf_text, crossref_title):
+        page = "Lecture Notes in Computer Science, vol 12000\nDeep Learning for Epitope Prediction\n10.1007/978-3-030-12345-6"
+        pdf_text.return_value = (page, page)
+        result = pipeline.inspect_file(self.file("lncs_paper.pdf"))
+        self.assertNotEqual(result["status"], "excluded")
+
+    def test_cited_title_inside_long_page_text_is_not_a_title_match(self):
+        self.assertFalse(pipeline._title_match(
+            "This lecture discusses a cited article titled B-cell epitopes discontinuity analysis "
+            "and reviews several unrelated teaching examples",
+            "B-cell epitopes discontinuity analysis",
+        ))
 
     def test_corrupt_pdf_is_review_not_exception(self):
         result = pipeline.inspect_file(self.file("broken.pdf", b"this is not a PDF"))
@@ -158,6 +205,39 @@ class InspectFileTests(unittest.TestCase):
         self.assertEqual(item["abstract"], "Epitopes matter.")
         self.assertTrue(item["isOpenAccess"])
         self.assertEqual(item["authors"], ["Ada Example"])
+
+    def test_crossref_item_normalizes_metadata(self):
+        item = pipeline._crossref_item({
+            "DOI": "10.1038/s41586-020-0001",
+            "title": ["Single-cell antibody discovery"],
+            "author": [{"given": "Jane", "family": "Doe"}],
+            "container-title": ["Nature"],
+            "published-print": {"date-parts": [[2024, 5]]},
+            "abstract": "<jats:p>Single-cell analysis of antibodies.</jats:p>",
+            "is-referenced-by-count": 42,
+            "link": [{"URL": "https://example.org/oa.pdf", "content-type": "application/pdf"}],
+        })
+        self.assertEqual(item["doi"], "10.1038/s41586-020-0001")
+        self.assertEqual(item["title"], "Single-cell antibody discovery")
+        self.assertEqual(item["venue"], "Nature")
+        self.assertEqual(item["year"], "2024")
+        self.assertEqual(item["abstract"], "Single-cell analysis of antibodies.")
+        self.assertEqual(item["citedBy"], 42)
+        self.assertTrue(item["isOpenAccess"])
+        self.assertEqual(item["pdfURL"], "https://example.org/oa.pdf")
+        self.assertEqual(item["provider"], "Crossref")
+
+    def test_search_external_literature_falls_back_to_crossref(self):
+        fixture = [{"title": "Crossref fallback paper", "doi": "10.1000/fallback", "provider": "Crossref"}]
+        with patch("pipeline._openalex_json", side_effect=urllib.error.HTTPError("https://api.openalex.org", 429, "Too Many Requests", {}, None)),              patch("pipeline._crossref_search", return_value=fixture):
+            results = pipeline.search_external_literature("single cell antibody")
+            self.assertEqual(results, fixture)
+
+    def test_search_external_literature_raises_when_both_fail(self):
+        with patch("pipeline._openalex_json", side_effect=urllib.error.HTTPError("https://api.openalex.org", 429, "Too Many Requests", {}, None)),              patch("pipeline._crossref_search", side_effect=urllib.error.URLError("Connection refused")):
+            with self.assertRaises(ValueError) as ctx:
+                pipeline.search_external_literature("single cell antibody")
+            self.assertIn("学术检索服务暂时无法连接", str(ctx.exception))
 
 
 if __name__ == "__main__":

@@ -39,9 +39,9 @@ External discovery and local matching are separate. Local synonym search remains
 
 ## Review Queue
 
-Files that lack a readable DOI, that point to a preprint record, or whose first-page title disagrees with Crossref stay in the review queue. This is deliberate: the workbench does not guess an article's identity from its filename. Manually add a correct record in Zotero when necessary; the workbench will synchronize it on its next refresh.
+Files that lack a readable DOI, that point to a preprint record, or whose first-page title disagrees with Crossref stay in the review queue. Defense presentations, course lesson plans, and lecture courseware are directly excluded before Crossref lookup so they do not enter the library or clutter the review queue. A title match without a first-page DOI is evidence for review, not enough for automatic import.
 
-Use `Retry` after a network error or after replacing a file. Use `Ignore` for files that are not literature. Neither action deletes the downloaded file.
+Use `Confirm import` when the displayed title and type are correct; the record then enters the normal Zotero import queue. Use `Retry` after a network error or after replacing a file. Use `Ignore` for files that are not literature. None of these actions deletes the downloaded file.
 
 ## Zotero Authorization
 

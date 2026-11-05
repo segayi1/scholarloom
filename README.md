@@ -35,7 +35,7 @@ ScholarLoom watches the places where papers actually arrive, verifies each file 
 - **Watch without babysitting.** Add one or more download folders. ScholarLoom waits for PDF and EPUB files to settle, then moves each one through a visible queue.
 - **Verify before trusting a filename.** It reads the opening pages locally, extracts DOI or patent-number signals, queries Crossref, and requires the local title and publisher metadata to agree.
 - **Keep the library clean.** Content hashes, DOI values, and patent numbers stop the same work from entering twice. Accepted full texts are copied to a stable local library while the originals in Downloads stay untouched.
-- **Leave uncertainty visible.** Verified journal articles and patents enter Zotero with topic collections, source tags, and linked full texts. Ambiguous or mismatched files stay in a review queue.
+- **Leave uncertainty visible.** DOI-backed journal articles and structurally verified patents enter Zotero automatically. Title-only matches, mismatched files, and other ambiguous PDFs stay in a review queue with an explicit manual-import action. Defense presentations, course lesson plans, and lecture courseware are directly excluded.
 - **Work without a model.** Automatic import and Zotero organization can run without an AI endpoint. Pending reading cards can be generated later.
 
 ### A reading desk built around the paper

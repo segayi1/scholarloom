@@ -5,6 +5,11 @@
   const zhToEn = new Map(Object.entries({
     '自动收文 · AI 速读 · 语义匹配，把散落的文献编织成可检索的私人知识库。': 'Automatic intake · AI reading cards · semantic matching. Weave scattered papers into a searchable private knowledge base.',
     '下载、整理、速读与 Zotero 文献库在这里衔接。': 'Download, organize, and read literature with Zotero in one place.',
+    '搜索': 'Search',
+    '检索中…': 'Searching...',
+    '支持查看原文出处与一键下载公开全文入库': 'View online records or add open-access papers to your library',
+    '无公开PDF': 'No open PDF',
+    '暂无在线摘要': 'No abstract available',
     '正在连接本地服务…': 'Connecting to the local service...',
     '工作台页面': 'Workbench pages',
     '工作台': 'Workbench',
@@ -209,6 +214,8 @@
     '设置已保存。': 'Settings saved.',
     '已重新加入处理队列。': 'Returned to the processing queue.',
     '已忽略此记录。': 'Record ignored.',
+    '确认导入': 'Confirm import',
+    '已确认题录，等待导入 Zotero。': 'Record confirmed. Waiting to import into Zotero.',
     '已请求重新生成摘要。': 'Reading-card regeneration requested.',
     '最多选择十二篇，请先移除一篇。': 'You can select up to twelve papers. Remove one first.',
     '摘要模型连接成功。': 'Reading-card model connected.',
@@ -417,9 +424,10 @@
     if(!jobs.length){el('jobs').innerHTML='<div class="empty">当前没有匹配记录。</div>';applyLanguage();return;}
     el('jobs').innerHTML=jobs.map((job,index)=>{
       const canRetry=['review','error','waiting_zotero'].includes(job.status);
+      const canConfirm=job.canConfirm;
       const canIgnore=!['imported','duplicate','excluded'].includes(job.status);
       const updated=formatUpdated(job.updated);
-      return `<article class="job" data-status="${esc(job.status)}"><span class="job-order" aria-hidden="true">${String(index+1).padStart(2,'0')}</span><div class="job-main"><div class="job-name">${esc(job.name||job.path||'未命名文件')}</div><div class="job-title">${esc(job.title||job.path||'')}</div></div><div class="job-state"><span class="job-status">${esc(statusLabel(job.status))}</span>${updated?`<span class="job-time">${esc(updated)}</span>`:''}</div><div class="job-note">${esc(job.reason||'')}</div><div class="job-actions">${canRetry?`<button data-action="retry" data-id="${esc(job.id)}">重试</button>`:''}${canIgnore?`<button data-action="ignore" data-id="${esc(job.id)}">忽略</button>`:''}</div></article>`;
+      return `<article class="job" data-status="${esc(job.status)}"><span class="job-order" aria-hidden="true">${String(index+1).padStart(2,'0')}</span><div class="job-main"><div class="job-name">${esc(job.name||job.path||'未命名文件')}</div><div class="job-title">${esc(job.title||job.path||'')}</div></div><div class="job-state"><span class="job-status">${esc(statusLabel(job.status))}</span>${updated?`<span class="job-time">${esc(updated)}</span>`:''}</div><div class="job-note">${esc(job.reason||'')}</div><div class="job-actions">${canConfirm?`<button data-action="confirm" data-id="${esc(job.id)}">确认导入</button>`:''}${canRetry?`<button data-action="retry" data-id="${esc(job.id)}">重试</button>`:''}${canIgnore?`<button data-action="ignore" data-id="${esc(job.id)}">忽略</button>`:''}</div></article>`;
     }).join('');
     applyLanguage();
   }
@@ -477,9 +485,19 @@
     return `<details class="card-tools" ${state.paperOpen.has(row.key)?'open':''}><summary>${esc(t('智能科研问答与相似文献','Paper Q&A and related literature'))}</summary><div class="ask-controls"><select data-ask-preset="${esc(row.key)}" aria-label="${esc(t('选择场景','Choose a preset'))}">${presetOptions()}</select><textarea rows="3" data-ask-question="${esc(row.key)}" placeholder="${esc(t('可补充具体问题','Add a specific question'))}">${esc(state.paperDrafts[row.key]||'')}</textarea><div class="actions"><button class="btn primary" data-action="paper-chat" data-key="${esc(row.key)}">${esc(t('提问','Ask'))}</button>${relatedButton}</div></div>${answerBox}${relatedBox}</details>`;
   }
   function externalMarkup(items,scope='search'){
+    const isSearch=scope==='search';
     return safeArray(items).map(item=>{
       const pdf=safeURL(item.pdfURL),source=safeURL(item.sourceURL);
-      return `<article class="external-card"><div class="meta"><span>${esc(item.year||t('年份未详','Year unknown'))}</span>${item.type?`<span class="pill">${esc(item.type)}</span>`:''}${item.isOpenAccess?`<span class="pill flag">${esc(t('开放获取','Open access'))}</span>`:''}<span>${esc(t('被引','cited by'))} ${Number(item.citedBy||0)}</span></div><h3 lang="${uiLanguage}">${esc(item.title||t('题名未提供','Title unavailable'))}</h3><p class="authors">${esc(safeArray(item.authors).slice(0,6).join(', ')||t('作者未提供','Authors unavailable'))}</p><p>${esc(text(item.abstract).slice(0,420))}</p><div class="links">${source?`<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">${esc(t('查看记录','View record'))} ↗</a>`:''}${pdf?`<button class="btn primary" data-action="ingest-external" data-url="${esc(pdf)}" data-title="${esc(item.title||'')}">${esc(t('一键收入本地','Add to local library'))}</button>`:''}</div></article>`;
+      const year=item.year?`<span>${esc(item.year)}</span>`:`<span>${esc(t('年份未详','Year unknown'))}</span>`;
+      const type=item.type?`<span class="pill">${esc(item.type)}</span>`:'';
+      const venue=item.venue?`<span class="pill venue" title="${esc(item.venue)}">${esc(item.venue)}</span>`:'';
+      const oa=item.isOpenAccess?`<span class="pill flag">${esc(t('开放获取','Open access'))}</span>`:'';
+      const cited=item.citedBy!==undefined?`<span>${esc(t('被引','cited by'))} ${Number(item.citedBy||0)}</span>`:'';
+      const provider=item.provider?`<span class="pill provider">${esc(item.provider)}</span>`:'';
+      const authors=safeArray(item.authors).slice(0,6).join(', ')||t('作者未提供','Authors unavailable');
+      const abstractContent=text(item.abstract);
+      const abstractHtml=abstractContent?`<p class="external-abstract">${esc(abstractContent.slice(0,500))}</p>`:`<p class="external-abstract muted-empty">${esc(t('暂无在线摘要','No abstract available'))}</p>`;
+      return `<article class="card external-card ${isSearch?'full-view':'compact-view'}"><div class="meta">${year}${type}${venue}${oa}${cited}${provider}</div><h3 lang="${uiLanguage}">${esc(item.title||t('题名未提供','Title unavailable'))}</h3><p class="authors">${esc(authors)}</p>${abstractHtml}<div class="links">${source?`<a class="btn small ghost-link" href="${esc(source)}" target="_blank" rel="noopener noreferrer">${esc(t('查看记录','View record'))} ↗</a>`:''}${pdf?`<button class="btn primary small" data-action="ingest-external" data-url="${esc(pdf)}" data-title="${esc(item.title||'')}">${esc(t('一键收入本地','Add to local library'))}</button>`:`<span class="no-pdf-hint">${esc(t('无公开PDF','No open PDF'))}</span>`}</div></article>`;
     }).join('');
   }
   function safeGuide(guide){const keys=safeArray(guide.reading), docs=byKey();return `<div class="guide"><h3>${esc(guide.name)}</h3><p>${esc(guide.summary||'')}</p><ul>${safeArray(guide.insights).map(item=>`<li>${esc(item)}</li>`).join('')}</ul><div class="reading-path">${keys.filter(key=>docs[key]).map((key,index)=>`<button class="reading-step" data-focus="${esc(key)}">${index+1}. ${esc(docs[key].zhTitle||docs[key].title||key)}</button>`).join('')}</div></div>`;}
@@ -487,11 +505,20 @@
   function renderResults(){
     if(!state.snapshot)return;
     renderSearchMode();
+    const hintEl=el('result-hint');
+    const submitBtn=el('search-submit');
     if(state.searchMode==='external'){
       el('result-count').textContent=state.externalLoading?t('正在检索开放学术图谱…','Searching open scholarly graphs...'):`${t('全网发现','Discover online')} · ${state.externalResults.length}`;
+      if(hintEl)hintEl.textContent=t('支持查看原文出处与一键下载公开全文入库','View online records or add open-access papers to your library');
+      if(submitBtn){
+        if(state.externalLoading){submitBtn.setAttribute('disabled','true');submitBtn.textContent=t('检索中…','Searching...');}
+        else{submitBtn.removeAttribute('disabled');submitBtn.textContent=t('搜索','Search');}
+      }
       el('results').innerHTML=state.externalLoading?`<div class="empty">${esc(t('正在检索开放学术图谱…','Searching open scholarly graphs...'))}</div>`:state.externalResults.length?externalMarkup(state.externalResults):`<div class="empty">${esc(t('输入主题后查找全网开放文献。','Enter a topic to discover open literature online.'))}</div>`;
       el('load-more').hidden=true;el('guide-panel').hidden=true;el('active-route').hidden=true;renderCompareBar();applyLanguage();return;
     }
+    if(hintEl)hintEl.textContent=t('勾选 2–12 篇可对比或生成小综述','Select 2–12 papers to compare or synthesize');
+    if(submitBtn){submitBtn.removeAttribute('disabled');submitBtn.textContent=t('搜索','Search');}
     const rows=filteredDocs(),total=safeArray(state.snapshot.documents).length;
     el('result-count').textContent=`${t('找到','Found')} ${rows.length} / ${total} ${t('条文献','documents')}${state.focusKey?` · ${t('当前定位文献','focused document')}`:''}`;
     el('results').innerHTML=rows.length?rows.slice(0,state.limit).map(cardMarkup).join(''):`<div class="empty">${esc(t('没有找到匹配文献，可尝试缩短问题或清除筛选条件。','No matching literature. Try a shorter query or clear the filters.'))}</div>`;
@@ -502,14 +529,26 @@
     el('search-mode-local').classList.toggle('active',state.searchMode==='local');el('search-mode-external').classList.toggle('active',state.searchMode==='external');
     el('search-mode-local').setAttribute('aria-pressed',String(state.searchMode==='local'));el('search-mode-external').setAttribute('aria-pressed',String(state.searchMode==='external'));
     document.querySelector('.filters').hidden=state.searchMode==='external';
-    document.querySelector('.library-layout aside').hidden=state.searchMode==='external';
+    const aside=document.querySelector('.library-layout aside');
+    if(aside)aside.hidden=state.searchMode==='external';
+    document.querySelector('.library-layout')?.classList.toggle('no-aside',state.searchMode==='external');
   }
   async function runExternalSearch(){
+    if(state.externalLoading)return;
     const query=el('query').value.trim();
-    if(!query){toast('输入主题后查找全网开放文献。');return;}
+    if(!query){toast(t('输入主题后查找全网开放文献。','Enter a topic to discover open literature online.'));return;}
     state.searchMode='external';state.query=query;state.externalLoading=true;renderResults();
-    await runAction(async()=>{const result=await post('/api/external-recommend',{mode:'search',query});state.externalResults=safeArray(result.results);state.externalLoading=false;renderResults();});
-    if(state.externalLoading){state.externalLoading=false;renderResults();}
+    try{
+      await runAction(async()=>{
+        const result=await post('/api/external-recommend',{mode:'search',query});
+        state.externalResults=safeArray(result.results);
+      });
+    }catch(err){
+      // runAction already toasts the error if any
+    }finally{
+      state.externalLoading=false;
+      renderResults();
+    }
   }
   function showDocument(key){Object.assign(state,{focusKey:key,routeKeys:null,routeName:'',category:'',kind:'',year:'',studyType:'',readingStatus:'',query:'',limit:24,searchMode:'local'});syncFilters();setView('library');renderResults();window.scrollTo({top:0,behavior:'smooth'});}
   function syncFilters(){for(const name of ['category','kind','year','studyType','readingStatus'])el(name).value=state[name]||'';el('query').value=state.query;}
@@ -528,12 +567,21 @@
   }
   function clearComparison(){state.comparison=[];state.compareFocus='';state.synthesis=null;renderCompareBar();renderComparison();}
   function syncLibraryInputs(){syncFilters();}
-  document.addEventListener('click',async event=>{const button=event.target.closest('button');if(!button)return;if(button.dataset.view){await navigateView(button.dataset.view);return;}if(button.dataset.jobStatus!==undefined){state.jobsFilter=button.dataset.jobStatus;el('job-filter').value=state.jobsFilter;renderOverview();renderJobs();return;}if(button.dataset.category!==undefined){state.category=button.dataset.category;state.kind='';state.year='';state.studyType='';state.readingStatus='';state.query='';state.routeKeys=null;state.routeName='';state.focusKey=null;state.limit=24;state.searchMode='local';syncLibraryInputs();setView('library');renderResults();return;}if(button.dataset.route!==undefined){const route=safeArray(state.snapshot?.routes)[Number(button.dataset.route)];if(route)Object.assign(state,{routeKeys:safeArray(route.keys),routeName:route.title||'阅读路线',focusKey:null,category:'',kind:'',year:'',studyType:'',readingStatus:'',query:'',limit:24,searchMode:'local'});syncLibraryInputs();setView('library');renderResults();return;}if(button.dataset.focus){showDocument(button.dataset.focus);return;}if(button.id==='scan-new'||button.id==='scan-existing'){await runAction(async()=>{await post('/api/scan',button.id==='scan-existing'?{include_existing:true}:{});toast(button.id==='scan-existing'?'已开始识别已有下载文件。':'已开始扫描新增文件。');await getState();});return;}if(button.id==='open-comparison'){setView('compare');return;}if(button.id==='clear-compare'||button.id==='clear-compare-top'){clearComparison();return;}if(button.id==='load-more'){state.limit+=24;renderResults();return;}if(button.id==='home-search'){state.query=el('home-query').value;state.category='';state.kind='';state.year='';state.studyType='';state.readingStatus='';state.routeKeys=null;state.routeName='';state.focusKey=null;state.searchMode='local';syncFilters();setView('library');renderResults();return;}if(button.id==='authorize'){await runAction(async()=>{toast('请在 Zotero 弹窗中选择“始终允许”。该权限可随时在 Zotero 中撤销。');await post('/api/authorize',{});await getState();});return;}if(button.id==='open-folder'){await runAction(async()=>{await post('/api/open-folder',{});toast('已打开文献备份文件夹。');});return;}if(button.id==='save-settings'){await saveSettings();return;}if(button.id==='test-model'){await runAction(async()=>{const result=await post('/api/model-test',{});setMessage(result.message||'摘要模型连接成功。');});return;}if(button.dataset.action){await runAction(async()=>{const action=button.dataset.action;if(action==='retry'){await post('/api/retry',{id:button.dataset.id});toast('已重新加入处理队列。');await getState();}else if(action==='ignore'){await post('/api/ignore',{id:button.dataset.id});toast('已忽略此记录。');await getState();}else if(action==='summarize'){await post('/api/summarize',{key:button.dataset.key});toast('已请求重新生成摘要。');await getState();}});}});
+  document.addEventListener('click',async event=>{const button=event.target.closest('button');if(!button)return;if(button.dataset.view){await navigateView(button.dataset.view);return;}if(button.dataset.jobStatus!==undefined){state.jobsFilter=button.dataset.jobStatus;el('job-filter').value=state.jobsFilter;renderOverview();renderJobs();return;}if(button.dataset.category!==undefined){state.category=button.dataset.category;state.kind='';state.year='';state.studyType='';state.readingStatus='';state.query='';state.routeKeys=null;state.routeName='';state.focusKey=null;state.limit=24;state.searchMode='local';syncLibraryInputs();setView('library');renderResults();return;}if(button.dataset.route!==undefined){const route=safeArray(state.snapshot?.routes)[Number(button.dataset.route)];if(route)Object.assign(state,{routeKeys:safeArray(route.keys),routeName:route.title||'阅读路线',focusKey:null,category:'',kind:'',year:'',studyType:'',readingStatus:'',query:'',limit:24,searchMode:'local'});syncLibraryInputs();setView('library');renderResults();return;}if(button.dataset.focus){showDocument(button.dataset.focus);return;}if(button.id==='scan-new'||button.id==='scan-existing'){await runAction(async()=>{await post('/api/scan',button.id==='scan-existing'?{include_existing:true}:{});toast(button.id==='scan-existing'?'已开始识别已有下载文件。':'已开始扫描新增文件。');await getState();});return;}if(button.id==='open-comparison'){setView('compare');return;}if(button.id==='clear-compare'||button.id==='clear-compare-top'){clearComparison();return;}if(button.id==='load-more'){state.limit+=24;renderResults();return;}if(button.id==='home-search'){state.query=el('home-query').value;state.category='';state.kind='';state.year='';state.studyType='';state.readingStatus='';state.routeKeys=null;state.routeName='';state.focusKey=null;state.searchMode='local';syncLibraryInputs();setView('library');renderResults();return;}if(button.id==='authorize'){await runAction(async()=>{toast('请在 Zotero 弹窗中选择“始终允许”。该权限可随时在 Zotero 中撤销。');await post('/api/authorize',{});await getState();});return;}if(button.id==='open-folder'){await runAction(async()=>{await post('/api/open-folder',{});toast('已打开文献备份文件夹。');});return;}if(button.id==='save-settings'){await saveSettings();return;}if(button.id==='test-model'){await runAction(async()=>{const result=await post('/api/model-test',{});setMessage(result.message||'摘要模型连接成功。');});return;}if(button.dataset.action){await runAction(async()=>{const action=button.dataset.action;if(action==='confirm'){await post('/api/confirm',{id:button.dataset.id});toast('已确认题录，等待导入 Zotero。');await getState();}else if(action==='retry'){await post('/api/retry',{id:button.dataset.id});toast('已重新加入处理队列。');await getState();}else if(action==='ignore'){await post('/api/ignore',{id:button.dataset.id});toast('已忽略此记录。');await getState();}else if(action==='summarize'){await post('/api/summarize',{key:button.dataset.key});toast('已请求重新生成摘要。');await getState();}});}});
   document.addEventListener('click',async event=>{
     const button=event.target.closest('button');
     if(!button)return;
     if(button.id==='search-mode-local'){
       state.searchMode='local';state.externalLoading=false;renderResults();return;
+    }
+    if(button.id==='search-submit'){
+      if(state.searchMode==='external'){
+        await runExternalSearch();
+      }else{
+        const resultsEl=el('results');
+        if(resultsEl)resultsEl.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+      return;
     }
     if(button.id==='search-mode-external'){
       state.searchMode='external';renderResults();
@@ -577,11 +625,22 @@
   async function saveSettings(){const raw=el('model-url').value.trim()||'https://api.openai.com/v1';let parsed;try{parsed=new URL(raw);}catch{setMessage('API 地址格式无效。',true);return;}const loopback=['localhost','127.0.0.1','::1','[::1]'].includes(parsed.hostname);if(parsed.protocol!=='https:'&&!(parsed.protocol==='http:'&&loopback)){setMessage('API 地址须使用 HTTPS；仅本机回环地址可以使用 HTTP。',true);return;}const payload={watch_folders:el('watch-folders').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),watch_enabled:el('watch-enabled').checked,model_url:raw,model_name:el('model-name').value.trim(),auto_summary:el('auto-summary').checked,summary_language:el('ai-output-language').value,ui_language:uiLanguage,prompt_presets:promptPayload()};const key=el('model-key').value;if(key)payload.model_key=key;await runAction(async()=>{await post('/api/settings',payload);el('model-key').value='';state.promptDirty=false;setMessage('设置已保存。');await getState();});}
   for(const name of ['category','kind','year','studyType','readingStatus'])el(name).addEventListener('change',event=>{state[name]=event.target.value;state.focusKey=null;state.routeKeys=null;state.routeName='';state.limit=24;renderResults();});
   el('query').addEventListener('input',event=>{if(state.searchMode==='external')return;state.query=event.target.value;state.focusKey=null;state.routeKeys=null;state.routeName='';state.limit=24;renderResults();});
-  el('query').addEventListener('keydown',event=>{if(event.key==='Enter'&&state.searchMode==='external'){event.preventDefault();runExternalSearch();}});
+  el('query').addEventListener('keydown',event=>{
+    if(event.isComposing||event.keyCode===229)return;
+    if(event.key==='Enter'){
+      event.preventDefault();
+      if(state.searchMode==='external'){
+        runExternalSearch();
+      }else{
+        const resultsEl=el('results');
+        if(resultsEl)resultsEl.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    }
+  });
   el('prompt-editor').addEventListener('input',()=>{state.promptDirty=true;});
   el('results').addEventListener('input',event=>{const box=event.target.closest('[data-ask-question]');if(box)state.paperDrafts[box.dataset.askQuestion]=box.value;});
   el('comparison-content').addEventListener('input',event=>{if(event.target.id==='compare-focus')state.compareFocus=event.target.value;});
-  el('reset').addEventListener('click',()=>{Object.assign(state,{category:'',kind:'',year:'',studyType:'',readingStatus:'',query:'',routeKeys:null,routeName:'',focusKey:null,limit:24});syncFilters();renderResults();});
+  el('reset').addEventListener('click',()=>{Object.assign(state,{category:'',kind:'',year:'',studyType:'',readingStatus:'',query:'',routeKeys:null,routeName:'',focusKey:null,limit:24,externalResults:[],externalLoading:false});syncFilters();renderResults();});
   el('job-filter').addEventListener('change',event=>{state.jobsFilter=event.target.value;renderOverview();renderJobs();});
   el('results').addEventListener('change',async event=>{const box=event.target;if(box.matches('.reading-status')){const card=box.closest('.reading-tools'),note=card?.querySelector('.reading-note')?.value||'';await runAction(async()=>{await post('/api/document-state',{key:box.dataset.key,readingStatus:box.value,readingNote:note});toast('已保存阅读状态与笔记。');await getState();});return;}if(!box.matches('.compare-box'))return;const next=state.comparison.filter(key=>key!==box.dataset.key);if(box.checked&&next.length>=12){box.checked=false;toast('最多选择十二篇，请先移除一篇。');return;}state.comparison=box.checked?[...next,box.dataset.key]:next;renderCompareBar();});
   el('home-query').addEventListener('keydown',event=>{if(event.key==='Enter')el('home-search').click();});

@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.4.0 - 2026-11-05
+
+### Added
+
+- Manual import confirmation action (`/api/confirm`) for reviewed records, allowing user-verified items to enter the import queue.
+- Resilient external scholarly search with OpenAlex polite pool and seamless fallback to Crossref on rate-limit, empty results, or timeout.
+- Dedicated search submit button (`#search-submit`) and dynamic result hints for external scholarly discovery.
+- Venue and data provider badges on external paper cards with bottom-aligned action buttons.
+
+### Changed
+
+- Tightened automatic intake: only high-confidence DOI-backed journal articles and structurally verified patents import automatically; title-only matches wait for review.
+- Direct exclusion of non-literature materials (defense PPTs, course lesson plans, lecture courseware, exams, homework, and invoices) without cluttering the review queue.
+- Reclassify cached inspection jobs automatically when the local classifier upgrades (`INSPECTION_VERSION = 4`).
+- Upgraded external search layout to responsive full-width multi-column grid when sidebar is hidden.
+
+### Fixed
+
+- Eliminated duplicate search requests and false 429 errors caused by IME composition enter keys and rapid concurrent submissions.
+- Fixed 236px narrow-column layout bug on external search cards when sidebar is hidden.
+
 ## 1.3.0 - 2026-11-04
 
 ### Added

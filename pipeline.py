@@ -37,6 +37,7 @@ CATEGORIES = (
     "专利技术",
 )
 MAX_TEXT = 18_000
+INSPECTION_VERSION = 4
 MAX_EPUB_TOTAL = 100 * 1024 * 1024
 MAX_EPUB_ENTRY = 20 * 1024 * 1024
 MAX_EPUB_RATIO = 100
@@ -63,6 +64,7 @@ _CATEGORY_TERMS = {
 def _base_result(path: Path, digest: str, text: str = "") -> dict[str, Any]:
     return {
         "status": "review", "reason": "文件内容尚不能可靠确认文献类型，需人工核对。",
+        "inspectorVersion": INSPECTION_VERSION,
         "sha256": digest, "text": text[:MAX_TEXT],
         "metadata": {"itemType": "journalArticle", "title": "", "DOI": "", "creators": [],
                      "date": "", "publicationTitle": "", "abstractNote": "", "patentNumber": ""},
@@ -208,9 +210,9 @@ def extract_pdf_pages(path: str | Path, max_pages: int = 60) -> tuple[str, int]:
 def _openalex_json(url: str) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "ScholarLoom/1.3 (local academic discovery)"},
+        headers={"User-Agent": "ScholarLoom/1.3 (mailto:scholarloom@openalex-client.org)"},
     )
-    with urllib.request.urlopen(request, timeout=20) as response:
+    with urllib.request.urlopen(request, timeout=10) as response:
         return json.loads(response.read(3_000_000))
 
 
@@ -234,6 +236,7 @@ def _openalex_item(work: dict[str, Any]) -> dict[str, Any]:
             authors.append(name)
     best = work.get("best_oa_location") or {}
     primary = work.get("primary_location") or {}
+    source = primary.get("source") or {}
     open_access = work.get("open_access") or {}
     doi = str(work.get("doi") or "").removeprefix("https://doi.org/").lower()
     return {
@@ -241,6 +244,7 @@ def _openalex_item(work: dict[str, Any]) -> dict[str, Any]:
         "title": str(work.get("display_name") or "Untitled").strip(),
         "doi": doi,
         "year": work.get("publication_year") or "",
+        "venue": str(source.get("display_name") or "").strip(),
         "authors": authors,
         "citedBy": int(work.get("cited_by_count") or 0),
         "type": str(work.get("type") or "")[:80],
@@ -248,27 +252,107 @@ def _openalex_item(work: dict[str, Any]) -> dict[str, Any]:
         "sourceURL": str(primary.get("landing_page_url") or (f"https://doi.org/{doi}" if doi else work.get("id") or "")),
         "pdfURL": str(best.get("pdf_url") or open_access.get("oa_url") or ""),
         "isOpenAccess": bool(open_access.get("is_oa") and best.get("pdf_url")),
+        "provider": "OpenAlex",
     }
 
 
+def _crossref_item(item: dict[str, Any]) -> dict[str, Any]:
+    doi = _clean_doi(item.get("DOI") or "")
+    title_list = item.get("title") or []
+    title = title_list[0].strip() if title_list else "Untitled"
+    authors = []
+    for a in item.get("author") or []:
+        name = f"{a.get('given', '')} {a.get('family', '')}".strip()
+        if not name:
+            name = str(a.get("name") or "").strip()
+        if name:
+            authors.append(name)
+    dates = item.get("published-print") or item.get("published-online") or item.get("created") or {}
+    date_parts = dates.get("date-parts", [[]])[0]
+    year = str(date_parts[0]) if date_parts else ""
+    venue_list = item.get("container-title") or []
+    venue = venue_list[0].strip() if venue_list else ""
+    pdf_url = ""
+    is_oa = False
+    for link in item.get("link") or []:
+        ct = str(link.get("content-type") or "").lower()
+        u = str(link.get("URL") or "")
+        if "pdf" in ct and u.startswith("https://"):
+            pdf_url = u
+            is_oa = True
+            break
+    abstract = re.sub(r"<[^>]+>", "", item.get("abstract") or "").strip()[:2200]
+    return {
+        "id": doi or title,
+        "title": title,
+        "doi": doi,
+        "year": year,
+        "venue": venue,
+        "authors": authors,
+        "citedBy": int(item.get("is-referenced-by-count") or 0),
+        "type": str(item.get("type") or "journal-article")[:80],
+        "abstract": abstract,
+        "sourceURL": str(item.get("URL") or (f"https://doi.org/{doi}" if doi else "")),
+        "pdfURL": pdf_url,
+        "isOpenAccess": is_oa,
+        "provider": "Crossref",
+    }
+
+
+def _crossref_search(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    params = urllib.parse.urlencode({
+        "query": query[:300],
+        "rows": max(1, min(int(limit), 20)),
+        "mailto": "scholarloom@openalex-client.org",
+    })
+    url = "https://api.crossref.org/works?" + params
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "ScholarLoom/1.3 (mailto:scholarloom@openalex-client.org)"},
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        payload = json.loads(response.read(3_000_000))
+        items = (payload.get("message") or {}).get("items") or []
+        return [_crossref_item(item) for item in items if isinstance(item, dict)]
+
+
 def search_external_literature(query: str, limit: int = 10) -> list[dict[str, Any]]:
-    """Search OpenAlex without requiring an API key."""
+    """Search OpenAlex with polite pool and automatic Crossref fallback."""
     query = query.strip()
     if len(query) < 2:
         raise ValueError("请输入至少两个字符的主题词。")
+    openalex_err = None
+    openalex_items: list[dict[str, Any]] = []
     params = urllib.parse.urlencode(
         {
             "search": query[:300],
             "per-page": max(1, min(int(limit), 20)),
             "select": "id,doi,display_name,publication_year,authorships,cited_by_count,"
             "primary_location,best_oa_location,open_access,abstract_inverted_index,type",
+            "mailto": "scholarloom@openalex-client.org",
         }
     )
     try:
         payload = _openalex_json("https://api.openalex.org/works?" + params)
+        openalex_items = [_openalex_item(work) for work in payload.get("results", []) if isinstance(work, dict)]
     except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as exc:
-        raise ValueError("OpenAlex 暂时无法连接，请检查网络后重试。") from exc
-    return [_openalex_item(work) for work in payload.get("results", []) if isinstance(work, dict)]
+        openalex_err = exc
+
+    if openalex_items:
+        return openalex_items
+
+    try:
+        crossref_items = _crossref_search(query, limit)
+        if crossref_items:
+            return crossref_items
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError) as exc:
+        if openalex_err:
+            raise ValueError("学术检索服务暂时无法连接（OpenAlex / Crossref），请检查网络连接后重试。") from exc
+
+    if openalex_err:
+        raise ValueError("学术检索服务暂时无法连接，请检查网络连接后重试。") from openalex_err
+
+    return []
 
 
 def get_related_literature(doi: str, limit: int = 8) -> list[dict[str, Any]]:
@@ -280,7 +364,7 @@ def get_related_literature(doi: str, limit: int = 8) -> list[dict[str, Any]]:
         seed = _openalex_json(
             "https://api.openalex.org/works/https://doi.org/"
             + urllib.parse.quote(clean, safe="/")
-            + "?select=id,related_works"
+            + "?select=id,related_works&mailto=scholarloom@openalex-client.org"
         )
         ids = [str(value).rsplit("/", 1)[-1] for value in seed.get("related_works") or []][: max(1, min(int(limit), 20))]
         if not ids:
@@ -291,6 +375,7 @@ def get_related_literature(doi: str, limit: int = 8) -> list[dict[str, Any]]:
                 "per-page": len(ids),
                 "select": "id,doi,display_name,publication_year,authorships,cited_by_count,"
                 "primary_location,best_oa_location,open_access,abstract_inverted_index,type",
+                "mailto": "scholarloom@openalex-client.org",
             }
         )
         payload = _openalex_json("https://api.openalex.org/works?" + params)
@@ -323,14 +408,22 @@ def _title_match(local: str, remote: str) -> bool:
     a, b = norm(local), norm(remote)
     if len(b) < 8 or len(a) < 8:
         return False
-    if b in a or a in b:
+    if a == b:
+        return True
+    shorter, longer = sorted((a, b), key=len)
+    # Long first-page text containing a cited title is not itself a title match.
+    if shorter in longer and len(shorter) / len(longer) >= 0.72:
         return True
     if re.search(r"[\u3400-\u9fff]", b):
-        return SequenceMatcher(None, a[:len(b) + 30], b).ratio() >= 0.78
+        return SequenceMatcher(None, a[:len(b) + 24], b).ratio() >= 0.86
     words_a = set(re.findall(r"[a-z0-9]+", local.casefold()))
     words_b = set(re.findall(r"[a-z0-9]+", remote.casefold()))
     significant = {w for w in words_b if len(w) > 2}
-    return bool(significant) and len(significant & words_a) / len(significant) >= 0.82
+    coverage = len(significant & words_a) / len(significant) if significant else 0
+    return coverage >= 0.9 and SequenceMatcher(
+        None, " ".join(re.findall(r"[a-z0-9]+", local.casefold())),
+        " ".join(re.findall(r"[a-z0-9]+", remote.casefold())),
+    ).ratio() >= 0.78
 
 
 def _local_title(first_page: str, epub_title: str = "") -> str:
@@ -338,16 +431,22 @@ def _local_title(first_page: str, epub_title: str = "") -> str:
         return epub_title.strip()
     lines = [re.sub(r"\s+", " ", line).strip(" \t-–—") for line in first_page.splitlines()]
     ignored = re.compile(r"(?i)^(?:doi|https?://|received\b|accepted\b|published\b|copyright|abstract|摘要|关键词|key words|keywords|\d{1,4}\s*$)")
+    stop = re.compile(
+        r"(?i)^(?:abstract\b|summary\b|introduction\b|background\b|摘要\b|关键词\b|"
+        r"引言\b|前言\b|contents?\b|outline\b)"
+    )
     candidates: list[str] = []
     for line in lines:
         if not line or ignored.search(line) or DOI_RE.search(line) or PATENT_NO_RE.search(line):
             continue
+        if candidates and stop.search(line):
+            break
         if len(line) < 8:
             continue
         if re.search(r"(?i)^(?:authors?|correspondence|journal|vol(?:ume)?\.?\s+\d|www\.)", line):
             continue
         candidates.append(line)
-        if len(" ".join(candidates)) >= 300:
+        if len(" ".join(candidates)) >= 260 or len(candidates) >= 4:
             break
     return " ".join(candidates)[:500]
 
@@ -429,17 +528,126 @@ def _patent_title(first_page: str) -> str:
     return ""
 
 
-def _exclusion_reason(text: str) -> str:
-    low = text.casefold()
+def _exclusion_reason(first_page: str, text: str = "", filename: str = "") -> str:
+    """Identify non-journal/non-patent documents that should be excluded directly."""
+    combined_head = f"{first_page[:6000]}\n{filename}".casefold()
+    low = (first_page + "\n" + text[:6000]).casefold()
+
+    # 1. 电子发票与财务报销单
+    invoice_pats = (
+        r"电子发票|增值税发票|普通发票|专用发票|发票号码|开票人|购买方信息|客运服务费|旅客运输服务|统一社会信用代码/纳税",
+    )
+    if any(re.search(p, combined_head) for p in invoice_pats):
+        return "文件明确为电子发票或财务凭证，直接剔除不导入。"
+
+    # 2. 个人简历
+    if re.search(r"个人简历|求职简历|\bcurriculum\s+vitae\b|\bresume\b", combined_head):
+        return "文件明确为个人简历，直接剔除不导入。"
+
+    # 3. 课程表
+    if re.search(r"课表|课程表|选课结果", combined_head):
+        return "文件明确为学生课程表，直接剔除不导入。"
+
+    # 4. WHO INN
     if ("international nonproprietary names" in low or "proposed inn" in low or "recommended inn" in low
-            or "国际非专利名称" in text or re.search(r"\bWHO\s+INN\b", text, re.I)):
+            or "国际非专利名称" in first_page or re.search(r"\bWHO\s+INN\b", first_page, re.I)):
         return "文件明确为 WHO INN 名称清单，不作为文献导入。"
+
+    # 5. 答辩PPT与开题报告
+    defense_pats = (
+        r"答辩(?:ppt|报告|文稿|演示|幻灯片|材料|幻灯|展示|提纲)?",
+        r"毕业答辩|学位答辩|开题报告|中期考核|中期答辩|预答辩|结题答辩|论文答辩|开题答辩|毕业设计答辩|讲述提纲",
+        r"\b(?:thesis|dissertation|oral|proposal|project|graduation)\s+(?:defense|defence|presentation|slides?|ppt|pptx)\b",
+        r"\b(?:defense|defence)\s+(?:slides?|presentation|ppt|report)\b",
+        r"\bpowerpoint\s+(?:presentation|slides?)\b",
+        r"\b(?:presentation|slide)\s+(?:deck|slides?)\b",
+        r"演示文稿|幻灯片放映|汇报ppt|答辩汇报|演讲幻灯片|逐页内容",
+        r"全流程科研配图|科研配图包",
+    )
+    if any(re.search(p, combined_head) for p in defense_pats):
+        return "文件明确为答辩PPT、开题报告或汇报演示，直接剔除不导入。"
+
+    # 6. 学位论文
     if ("doctoral dissertation" in low or "master's thesis" in low or "ph.d. thesis" in low
-            or "学位论文" in text or "博士学位论文" in text or "硕士学位论文" in text):
+            or "学位论文" in low or "博士学位论文" in low or "硕士学位论文" in low
+            or "博士毕业论文" in low or "硕士毕业论文" in low):
         return "首页明确标注为学位论文，不作为期刊论文导入。"
-    if re.search(r"\bISBN\b", text, re.I) and re.search(r"(?i)\b(?:edition|textbook|publisher)\b|出版社|第.{1,4}版|教材", text):
+
+    # 7. 课程教案、教学方案与教学大纲
+    lesson_pats = (
+        r"课程教案|教学教案|授课教案|备课教案|教学设计|教学方案|授课方案|备课笔记|教案首页|教案设计|学期教案|课时教案",
+        r"教学进度表|授课计划|教学大纲|课程简介及大纲|预习课件",
+        r"\b(?:lesson|teaching|instructional)\s+plans?\b",
+        r"\b(?:teaching|instructional)\s+design\b",
+        r"\b(?:course|class)\s+syllabus\b",
+    )
+    if any(re.search(p, combined_head) for p in lesson_pats):
+        return "文件明确为课程教案、教学设计或授课大纲，直接剔除不导入。"
+
+    # 8. 课程作业、习题、实验与试卷
+    exercise_pats = (
+        r"【考核试题】|考核试题|期末考核|期中考核|课程作业|课后作业|课堂练习|作业\s*\d+|homework\s*\d*",
+        r"\blab\s*\d+.*(?:answer|习题|导论|陈淏文)?\b|\bhomework\s*\d*\b|\boop_ex\b",
+        r"实验\s*\d+.*(?:层析|检测|色谱|指导|报告|预习)?",
+        r"实验步骤\s*–|实验步骤\s*[-—]|细胞转染及蛋白表达|亲和层析|蛋白纯化|活性检测|引物设计|pcr引物设计",
+        r"习题解答|课后习题|作业指导书|思考题解答",
+    )
+    if any(re.search(p, combined_head) for p in exercise_pats):
+        return "文件明确为课程作业、实验操作指导或考核试卷，直接剔除不导入。"
+
+    # 9. 课程复习资料、知识点汇编
+    review_guide_pats = (
+        r"复习纲要|复习资料|期中复习|期末复习|总复习|知识点精华|知识点汇编|药理学复习|毛概复习",
+    )
+    if any(re.search(p, combined_head) for p in review_guide_pats):
+        return "文件明确为课程复习资料或知识点汇编，直接剔除不导入。"
+
+    # 10. 课件讲义与章节
+    is_lncs = bool(re.search(
+        r"(?i)\blecture\s+notes\s+in\s+(?:computer\s+science|mathematics|physics|chemistry|ai|control|earth|business)\b|\bLNCS\b",
+        combined_head,
+    ))
+    if not is_lncs:
+        courseware_pats = (
+            r"\bchap(?:ter)?\s*\d+\b|\bchap\d+[a-z]?\b",
+            r"\b(?:lecture|course|class|seminar)\s+(?:notes?|slides?|materials?|handout)\b",
+            r"\b(?:teaching|course)\s+(?:slides?|materials?|notes?)\b",
+            r"\bslides?\s+for\b|\bslide\d+\b",
+            r"\blecture\s*\d+\b",
+            r"课程讲义|教学课件|课堂讲义|授课课件|课堂课件|课程课件",
+            r"第[一二三四五六七八九十\d]+[讲章课节]",
+            r"本课件由.*编写|推荐系统.*课程",
+        )
+        if any(re.search(p, combined_head) for p in courseware_pats):
+            return "文件明确为教学课件、课程讲义或教材章节，直接剔除不导入。"
+
+    # 11. 图书与电子书
+    if re.search(r"\bISBN\b", low, re.I) and re.search(r"(?i)\b(?:edition|textbook|publisher)\b|出版社|第.{1,4}版|教材", low):
         return "首页同时出现 ISBN 与图书/出版社信息，判定为图书。"
+
+    book_filename_pats = (
+        r"(?:second|third|fourth|fifth|1st|2nd|3rd|4th|5th)[-_\s]+edition",
+        r"97[89][\d-]{10,14}",
+        r"z-library|全本全注全译|中单書局|中华书局|pdffactory",
+    )
+    if any(re.search(p, filename.casefold()) for p in book_filename_pats):
+        return "首页包含图书出版或电子书特征，判定为图书直接剔除。"
+
+    # 12. 独立配图文件
+    if re.search(r"^g\d{2}\.pdf$|^enrichment_heatmap.*\.pdf$|^graphs_in_python\.pdf$", filename.casefold()) \
+       or (len(text.strip()) < 200 and re.search(r"go:\d+|log10\(p\)|heatmap", low)):
+        return "文件为独立科研配图、图表或图片包，直接剔除不导入。"
+
+    # 13. 调研汇报
+    if "调研汇报" in combined_head or "流程调研" in combined_head:
+        return "文件为主题调研汇报或调研总结，直接剔除不导入。"
+
     return ""
+
+
+def _lecture_reason(first_page: str, text: str, filename: str = "") -> str:
+    """Backward-compatible helper returning exclusion reason for lecture/slides."""
+    return _exclusion_reason(first_page, text, filename)
 
 
 def inspect_file(path: str | Path) -> dict[str, Any]:
@@ -467,7 +675,7 @@ def inspect_file(path: str | Path) -> dict[str, Any]:
         return result
     result["text"] = text[:MAX_TEXT]
 
-    exclusion = _exclusion_reason(first_page)
+    exclusion = _exclusion_reason(first_page, text, file_path.name)
     if exclusion:
         result.update(status="excluded", reason=exclusion, basis="首页明确文献类型")
         return result
@@ -535,13 +743,13 @@ def inspect_file(path: str | Path) -> dict[str, Any]:
         result["reason"] = f"首页题名与 DOI 元数据题名不匹配（本地：{local_title[:100]}），疑似引用 DOI，需核对。"
         result["basis"] = "首页 DOI 与 Crossref 题名不匹配"
         return result
-    result["status"] = "ready"
     if doi:
+        result["status"] = "ready"
         result["reason"] = "首页 DOI、Crossref 期刊文章类型和题名均匹配。"
         result["basis"] = "本地首页；Crossref DOI元数据"
     else:
-        result["reason"] = "首页题名与 Crossref 期刊文章题名、类型均匹配。"
-        result["basis"] = "本地首页题名；Crossref 题名检索"
+        result["reason"] = "题名与 Crossref 期刊文章匹配，但首页没有 DOI；请确认全文后可手动导入。"
+        result["basis"] = "本地首页题名；Crossref 题名检索；仅题名匹配"
     result["category"], result["keywords"], category_basis = _classify(remote_title, result["metadata"]["abstractNote"])
     if category_basis.startswith("分类线索不足"):
         result["reason"] += " 主题线索不足，分类待核对。"

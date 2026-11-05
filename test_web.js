@@ -40,8 +40,14 @@ assert(source.includes('relatedButton=/^10\\.\\d{4,9}\\//'), 'Related-paper disc
 assert(source.includes('/api/compare-synthesis'), 'Comparison synthesis must have a client API');
 assert(source.includes('/api/external-ingest'), 'Open-access discovery must support local ingestion');
 assert(source.includes('/api/document-state'), 'Reading status and notes must persist through the local API');
+assert(source.includes('/api/confirm'), 'Reviewed records must support explicit manual confirmation');
 assert(source.includes('download-synthesis'), 'Evidence synthesis must support Markdown download');
 assert(source.includes('next.length>=12'), 'Mini-review selection must support up to twelve papers');
 assert(source.includes('async function navigateView'), 'View navigation must coordinate scrolling before content changes');
 assert(source.indexOf('await scrollToTopSmooth()') < source.indexOf('if(request===pendingViewNavigation)setView(view)'), 'Navigation must reach the top before swapping views');
+assert(html.includes('id="search-submit"'), 'Search submit button must exist');
+assert(html.includes('id="result-hint"'), 'Result hint must have an id for dynamic updates');
+assert(source.includes('isComposing'), 'Keydown handler must guard against IME composition');
+assert(source.includes('external-card'), 'External search cards must be generated');
+assert(source.includes('no-aside'), 'Search mode toggle must adjust grid layout for external mode');
 console.log('Web search ranking checks passed');

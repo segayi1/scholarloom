@@ -54,12 +54,12 @@
     </section>
 
     <section id="library-view" hidden>
-      <div class="searchbox"><div class="search-modes" role="group" aria-label="检索范围"><button class="active" id="search-mode-local">本地文献</button><button id="search-mode-external">全网发现</button></div><div class="search-row"><label class="sr" for="query">搜索文献</label><input id="query" type="search" placeholder="例如：单B细胞抗体克隆 / CAR-T持久性 / PD-1表位"><button id="reset" class="btn">重置</button></div>
+      <div class="searchbox"><div class="search-modes" role="group" aria-label="检索范围"><button class="active" id="search-mode-local">本地文献</button><button id="search-mode-external">全网发现</button></div><div class="search-row"><label class="sr" for="query">搜索文献</label><input id="query" type="search" placeholder="例如：单B细胞抗体克隆 / CAR-T持久性 / PD-1表位"><button id="search-submit" class="btn primary">搜索</button><button id="reset" class="btn">重置</button></div>
         <div class="filters"><select id="category" aria-label="研究主题"><option value="">全部主题</option></select><select id="kind" aria-label="文献类型"><option value="">全部类型</option><option value="journalArticle">期刊文献</option><option value="patent">专利</option></select><select id="year" aria-label="年份"><option value="">全部年份</option></select><select id="studyType" aria-label="研究形式"><option value="">全部研究形式</option></select><select id="readingStatus" aria-label="阅读状态"><option value="">全部阅读状态</option><option value="unread">未读</option><option value="reading">在读</option><option value="read">已读</option></select></div>
         <p class="hint">支持中英文题名、摘要、作者、关键词和常见主题词。新文献随服务状态更新加入检索。</p><div id="active-route" class="active-route" hidden></div>
       </div>
       <div class="library-layout"><aside><h2>研究主题</h2><div id="topic-grid" class="topic-list"></div><h2 class="side-title">问题路线</h2><div id="question-grid" class="question-list"></div></aside>
-        <div class="library-main"><div id="guide-panel" hidden></div><div class="result-head"><div id="result-count" class="count" aria-live="polite"></div><div class="count">勾选 2–12 篇可对比或生成小综述</div></div><div id="results" class="cards"></div><button id="load-more" class="btn more" hidden>加载更多文献</button></div>
+        <div class="library-main"><div id="guide-panel" hidden></div><div class="result-head"><div id="result-count" class="count" aria-live="polite"></div><div id="result-hint" class="count">勾选 2–12 篇可对比或生成小综述</div></div><div id="results" class="cards"></div><button id="load-more" class="btn more" hidden>加载更多文献</button></div>
       </div>
     </section>
 

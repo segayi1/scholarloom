@@ -229,6 +229,40 @@ class WorkbenchServerTests(unittest.TestCase):
         self.assertEqual(current["title"], "Fresh title")
         self.assertEqual(current["status"], "review")
 
+    def test_old_inspection_result_is_reclassified_without_replacing_pdf(self):
+        path = self.input / "cached.pdf"
+        path.write_bytes(b"unchanged classifier fixture")
+        sha = hashlib.sha256(path.read_bytes()).hexdigest()
+        old_result = {"status": "review", "sha256": sha, "reason": "old classifier", "metadata": {"title": "Old title"}}
+        job = self.add_job(path, status="waiting_zotero", sha=sha, result=old_result)
+        fresh = {"status": "review", "sha256": sha, "inspectorVersion": 2,
+                 "reason": "fresh classifier", "metadata": {"title": "Fresh title"}}
+        with patch("pipeline.inspect_file", return_value=fresh) as inspect_file:
+            self.app.process(job)
+        inspect_file.assert_called_once_with(str(path))
+        current = self.get_job(path)
+        self.assertEqual(current["title"], "Fresh title")
+        self.assertEqual(current["status"], "review")
+
+    def test_review_record_can_be_confirmed_into_import_queue(self):
+        path = self.input / "confirmed.pdf"
+        path.write_bytes(b"confirmed fixture")
+        result = {
+            "status": "review",
+            "metadata": {"itemType": "journalArticle", "title": "Confirmed paper", "DOI": "10.1234/confirmed"},
+            "basis": "Crossref title search",
+        }
+        job = self.add_job(path, status="review", result=result)
+        visible = next(row for row in self.app.state()["jobs"] if row["id"] == job["id"])
+        self.assertTrue(visible["canConfirm"])
+        self.assertNotIn("result", visible)
+        confirmed = self.app.confirm_job(job["id"])
+        current = self.get_job(path)
+        self.assertEqual(confirmed["title"], "Confirmed paper")
+        self.assertEqual(current["status"], "queued")
+        self.assertEqual(json.loads(current["result"])["status"], "ready")
+        self.assertIn("人工确认", current["result"])
+
     def test_parent_saved_child_failed_retry_adds_attachment_with_same_key(self):
         path = self.input / "partial.pdf"
         path.write_bytes(b"partial-write fixture")
