@@ -6,6 +6,7 @@ import hashlib
 import html
 import json
 import re
+import time
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -22,6 +23,9 @@ try:
 except ImportError:  # pragma: no cover - deployment environment supplies PyMuPDF
     fitz = None
 
+USER_AGENT = "ScholarLoom/2.0.0"
+OPENALEX_USER_AGENT = f"{USER_AGENT} (mailto:scholarloom@openalex-client.org)"
+
 
 CATEGORIES = (
     "抗体结构、表位与免疫机制",
@@ -37,15 +41,42 @@ CATEGORIES = (
     "专利技术",
 )
 MAX_TEXT = 18_000
-INSPECTION_VERSION = 4
+INSPECTION_VERSION = 6
 MAX_EPUB_TOTAL = 100 * 1024 * 1024
 MAX_EPUB_ENTRY = 20 * 1024 * 1024
 MAX_EPUB_RATIO = 100
 DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.I)
+ARXIV_ID_RE = re.compile(
+    r"(?i)\barxiv(?:\.org/(?:abs|pdf)/|[\s:：_-]+)"
+    r"([a-z][a-z.-]*(?:\.[a-z]{2})?/\d{7}|\d{4}\.\d{4,5})(v\d+)?"
+)
 PATENT_NO_RE = re.compile(
     r"\b(?:CN\s*\d{7,}(?:\s*[A-Z]\d?)?|US\s*\d{7,}(?:\s*[A-Z]\d?)?|"
     r"WO\s*\d{4}/?\d{5,}(?:\s*[A-Z]\d?)?|EP\s*\d{7,}(?:\s*[A-Z]\d?)?|"
     r"JP\s*\d{7,}(?:\s*[A-Z]\d?)?|KR\s*\d{7,}(?:\s*[A-Z]\d?)?)\b", re.I
+)
+_GREEK_TRANSLATION = str.maketrans({
+    "α": "a", "β": "b", "γ": "g", "δ": "d", "ε": "e", "ζ": "z", "η": "e",
+    "θ": "th", "ι": "i", "κ": "k", "λ": "l", "μ": "m", "ν": "n", "ξ": "x",
+    "ο": "o", "π": "p", "ρ": "r", "σ": "s", "τ": "t", "υ": "u", "φ": "f",
+    "χ": "x", "ψ": "ps", "ω": "o",
+})
+_TITLE_LABEL_RE = re.compile(
+    r"(?i)^(?:research\s+article|review\s+article|original\s+article|technical\s+note|"
+    r"research\s+paper|article\s+recommendations?|article|review|letter|report|"
+    r"brief\s+communication)\s*[:|\-–—]?\s*"
+)
+_TITLE_NOISE_RE = re.compile(
+    r"(?i)^(?:doi\b|https?://|www\.|received\b|accepted\b|published\b|revised\b|"
+    r"available\s+online\b|copyright\b|©|creative\s+commons\b|check\s+for\s+updates|"
+    r"cite\s+this\b|read\s+online\b|metrics\b|access\b|"
+    r"(?:page\s*)?\d{1,4}(?:\s*(?:/|of)\s*\d{1,4})?$|"
+    r"(?:nature|science|cell)(?:\s+\w+)?\s*\|.*\bvol(?:ume)?\.?\s*\d+\b|"
+    r"volume\s+\d+\b|vol(?:ume)?\.?\s+\d+\b)"
+)
+_TITLE_STOP_RE = re.compile(
+    r"(?i)^(?:abstract\b|summary\b|introduction\b|background\b|摘要\b|关键词\b|"
+    r"引言\b|前言\b|contents?\b|outline\b)"
 )
 _CATEGORY_TERMS = {
     "抗体结构、表位与免疫机制": "antibody monoclonal immunoglobulin epitope paratope antigen-antibody immune receptor tcr bcr 抗体 单克隆 表位 免疫球蛋白 免疫机制 抗原抗体",
@@ -132,6 +163,26 @@ def _pdf_text(path: Path) -> tuple[str, str]:
         doc.close()
 
 
+def _pdf_metadata(path: Path) -> dict[str, str]:
+    """Read descriptive PDF metadata without making it required for inspection."""
+    if fitz is None:
+        return {}
+    try:
+        doc = fitz.open(path)
+    except Exception:
+        return {}
+    try:
+        raw = doc.metadata or {}
+        return {
+            key: re.sub(r"\s+", " ", str(raw.get(key) or "")).strip()
+            for key in ("title", "author", "subject", "keywords", "creator")
+        }
+    except Exception:
+        return {}
+    finally:
+        doc.close()
+
+
 def _safe_epub_text(path: Path) -> tuple[str, str, str]:
     with zipfile.ZipFile(path) as archive:
         infos = archive.infolist()
@@ -210,7 +261,7 @@ def extract_pdf_pages(path: str | Path, max_pages: int = 60) -> tuple[str, int]:
 def _openalex_json(url: str) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "ScholarLoom/1.3 (mailto:scholarloom@openalex-client.org)"},
+        headers={"User-Agent": OPENALEX_USER_AGENT},
     )
     with urllib.request.urlopen(request, timeout=10) as response:
         return json.loads(response.read(3_000_000))
@@ -308,7 +359,7 @@ def _crossref_search(query: str, limit: int = 10) -> list[dict[str, Any]]:
     url = "https://api.crossref.org/works?" + params
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "ScholarLoom/1.3 (mailto:scholarloom@openalex-client.org)"},
+        headers={"User-Agent": OPENALEX_USER_AGENT},
     )
     with urllib.request.urlopen(request, timeout=10) as response:
         payload = json.loads(response.read(3_000_000))
@@ -386,6 +437,7 @@ def get_related_literature(doi: str, limit: int = 8) -> list[dict[str, Any]]:
 
 def _clean_doi(value: str) -> str:
     value = value.rstrip(".,;:]>}").lower()
+    value = re.sub(r"^(10\.\d{4,9})/+", r"\1/", value)
     while value.endswith(")") and value.count(")") > value.count("("):
         value = value[:-1]
     return value
@@ -394,6 +446,12 @@ def _clean_doi(value: str) -> str:
 def _first_doi(first_page: str) -> str:
     # PDFs often encode "fi" as a single ligature, including inside DOIs.
     text = unicodedata.normalize("NFKC", first_page)
+    text = text.replace("\u00ad", "").replace("\u200b", "").replace("\ufeff", "")
+    # Some Chinese PDF fonts map a visible hyphen to a private-use glyph.
+    text = re.sub(r"[\ue000-\uf8ff]", "-", text)
+    # Some PDF text extractors insert a space at a wrapped numeric DOI boundary.
+    text = re.sub(r"(?<=\.)[ \t]+(?=\d)", "", text)
+    text = re.sub(r"(?<=\d\.)\s+(?=\d)", "", text)
     refs = re.search(r"(?im)^\s*(?:references|bibliography|参考文献)\s*$", text)
     if refs:
         text = text[:refs.start()]
@@ -401,11 +459,58 @@ def _first_doi(first_page: str) -> str:
     return _clean_doi(match.group(0)) if match else ""
 
 
+def _filename_doi(filename: str) -> str:
+    """Recover official article IDs when a PDF omits its title-page DOI."""
+    stem = Path(filename).stem
+    nature = re.fullmatch(r"(s\d{5}-\d{3}-\d{5}-[\dxX])", stem)
+    if nature:
+        return "10.1038/" + nature.group(1).lower()
+    elife = re.fullmatch(r"elife-(\d+)", stem, re.I)
+    if elife:
+        return "10.7554/elife." + elife.group(1)
+    sciimmunol = re.fullmatch(r"sciimmunol\.([a-z0-9]+)", stem, re.I)
+    if sciimmunol:
+        return "10.1126/sciimmunol." + sciimmunol.group(1).lower()
+    return ""
+
+
+def _compact_text(value: str) -> str:
+    value = html.unescape(re.sub(r"<[^>]+>", "", value))
+    value = unicodedata.normalize("NFKC", value).translate(_GREEK_TRANSLATION)
+    value = unicodedata.normalize("NFKD", value).casefold()
+    return "".join(c for c in value if c.isalnum())
+
+
+def _metadata_title(metadata: dict[str, str], filename: str) -> str:
+    """Accept useful PDF metadata titles, but not generic export artifacts."""
+    title = re.sub(r"\s+", " ", metadata.get("title", "")).strip(" .")
+    if not 8 <= len(title) <= 500:
+        return ""
+    compact = _compact_text(title)
+    if not compact or compact == _compact_text(Path(filename).stem):
+        return ""
+    if compact in {"untitled", "untitleddocument", "document", "microsoftword", "latexdocument"}:
+        return ""
+    if re.match(r"(?i)^(?:untitled|microsoft\s+word|latex|powerpoint)\b", title):
+        return ""
+    return title
+
+
+def _arxiv_id(first_page: str, metadata: dict[str, str], filename: str) -> str:
+    sources = (
+        first_page[:6000],
+        " ".join(metadata.get(key, "") for key in ("subject", "keywords", "creator")),
+        Path(filename).stem,
+    )
+    for source in sources:
+        match = ARXIV_ID_RE.search(source)
+        if match:
+            return match.group(1) + (match.group(2) or "")
+    return ""
+
+
 def _title_match(local: str, remote: str) -> bool:
-    def norm(value: str) -> str:
-        value = unicodedata.normalize("NFKC", value).casefold()
-        return "".join(c for c in value if c.isalnum())
-    a, b = norm(local), norm(remote)
+    a, b = _compact_text(local), _compact_text(remote)
     if len(b) < 8 or len(a) < 8:
         return False
     if a == b:
@@ -426,58 +531,172 @@ def _title_match(local: str, remote: str) -> bool:
     ).ratio() >= 0.78
 
 
+def _title_evidence(text: str, remote_title: str) -> bool:
+    """Require the Crossref title to appear in the paper's opening matter."""
+    front = text[:12_000]
+    refs = re.search(r"(?im)^\s*(?:references|bibliography|参考文献)\s*$", front)
+    if refs:
+        front = front[:refs.start()]
+    # Line-numbered preprints often put a bare number between wrapped title lines.
+    front = "\n".join(line for line in front.splitlines() if not re.fullmatch(r"\d{1,3}", line.strip()))
+    needle = _compact_text(remote_title)
+    return len(needle) >= 20 and needle in _compact_text(front)
+
+
+def _looks_like_author_line(line: str) -> bool:
+    if "@" in line or re.search(
+        r"(?i)\b(?:university|department|institute|college|school|laborator(?:y|ies)|"
+        r"centre|center|hospital|academy)\b",
+        line,
+    ):
+        return True
+    names = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z]\.?)*(?:\s+[A-Z][a-z]+)?\b", line)
+    if len(names) >= 3 and bool(re.search(r",|&|\bet\s+al\b", line)):
+        return True
+    return bool(re.search(
+        r"\b[A-Z][a-z]+\s+[A-Z][a-z]+\s+(?:and|&)\s+[A-Z][a-z]+", line
+    ))
+
+
+def _looks_like_abstract_line(line: str) -> bool:
+    words = re.findall(r"[A-Za-z\u3400-\u9fff-]+", line)
+    return len(words) >= 35 and bool(re.search(r"[.!?。]$", line))
+
+
+def _clean_title_lines(first_page: str) -> list[str]:
+    lines: list[str] = []
+    for raw in first_page.splitlines():
+        line = re.sub(r"\s+", " ", raw).strip(" \t-–—")
+        line = _TITLE_LABEL_RE.sub("", line).strip(" :：.-–—")
+        if not line or len(line) < 4 or _TITLE_NOISE_RE.search(line) or DOI_RE.search(line):
+            continue
+        if PATENT_NO_RE.search(line) or re.search(r"[\w.+-]+@[\w.-]+", line):
+            continue
+        lines.append(line)
+    return lines
+
+
 def _local_title(first_page: str, epub_title: str = "") -> str:
     if epub_title.strip():
         return epub_title.strip()
-    lines = [re.sub(r"\s+", " ", line).strip(" \t-–—") for line in first_page.splitlines()]
-    ignored = re.compile(r"(?i)^(?:doi|https?://|received\b|accepted\b|published\b|copyright|abstract|摘要|关键词|key words|keywords|\d{1,4}\s*$)")
-    stop = re.compile(
-        r"(?i)^(?:abstract\b|summary\b|introduction\b|background\b|摘要\b|关键词\b|"
-        r"引言\b|前言\b|contents?\b|outline\b)"
-    )
     candidates: list[str] = []
-    for line in lines:
-        if not line or ignored.search(line) or DOI_RE.search(line) or PATENT_NO_RE.search(line):
-            continue
-        if candidates and stop.search(line):
+    for line in _clean_title_lines(first_page):
+        if _TITLE_STOP_RE.search(line):
             break
-        if len(line) < 8:
-            continue
-        if re.search(r"(?i)^(?:authors?|correspondence|journal|vol(?:ume)?\.?\s+\d|www\.)", line):
-            continue
+        if _looks_like_abstract_line(line):
+            break
+        if _looks_like_author_line(line):
+            break
+        if candidates and (len(line) > 420 or len(re.findall(r"[A-Za-z]+", line)) > 45):
+            break
         candidates.append(line)
         if len(" ".join(candidates)) >= 260 or len(candidates) >= 4:
             break
-    return " ".join(candidates)[:500]
+    title = " ".join(candidates).strip(" .;:，。")
+    return title[:500] if len(title) >= 8 else ""
 
 
 def _crossref(doi: str) -> dict[str, Any]:
     url = "https://api.crossref.org/works/" + urllib.parse.quote(doi, safe="")
-    request = urllib.request.Request(url, headers={"User-Agent": "LocalLiteratureWorkbench/1.0 (metadata lookup)"})
-    with urllib.request.urlopen(request, timeout=15) as response:
-        data = json.loads(response.read(2_000_000).decode("utf-8"))
+    request = urllib.request.Request(url, headers={"User-Agent": f"{USER_AGENT} (metadata lookup)"})
+    data = _fetch_json(request)
     return data["message"]
 
 
-def _crossref_title(title: str, first_page: str = "") -> dict[str, Any] | None:
+def _fetch_json(request: urllib.request.Request) -> dict[str, Any]:
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                return json.loads(response.read(2_000_000).decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (429, 502, 503, 504) or attempt == 2:
+                raise
+            time.sleep(attempt + 1)
+    raise RuntimeError("unreachable")
+
+
+def _arxiv_record(arxiv_id: str) -> dict[str, Any] | None:
+    query = urllib.parse.urlencode({"id_list": arxiv_id})
+    request = urllib.request.Request(
+        f"https://export.arxiv.org/api/query?{query}",
+        headers={"User-Agent": f"{USER_AGENT} (preprint verification)"},
+    )
+    namespaces = {
+        "a": "http://www.w3.org/2005/Atom",
+        "arxiv": "http://arxiv.org/schemas/atom",
+    }
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                raw = response.read(2_000_000)
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (429, 502, 503, 504) or attempt == 2:
+                raise
+            time.sleep(attempt + 1)
+    else:  # pragma: no cover - loop always breaks or raises
+        return None
+    root = ElementTree.fromstring(raw)
+    entry = root.find("a:entry", namespaces)
+    if entry is None:
+        return None
+    remote_id = (entry.findtext("a:id", "", namespaces) or "").strip()
+    remote_title = re.sub(r"\s+", " ", entry.findtext("a:title", "", namespaces) or "").strip()
+    published = (entry.findtext("a:published", "", namespaces) or "").strip()[:10]
+    creators = [
+        {"creatorType": "author", "name": re.sub(
+            r"\s+", " ", author.findtext("a:name", "", namespaces) or ""
+        ).strip()}
+        for author in entry.findall("a:author", namespaces)
+    ]
+    creators = [author for author in creators if author["name"]]
+    if not remote_title or "/abs/" not in remote_id:
+        return None
+    archive_id = remote_id.rsplit("/abs/", 1)[-1]
+    return {
+        "title": remote_title,
+        "archiveID": f"arXiv:{archive_id}",
+        "creators": creators,
+        "date": published,
+        "abstractNote": _abstract(entry.findtext("a:summary", "", namespaces) or ""),
+        "sourceURL": f"https://arxiv.org/abs/{archive_id}",
+        "repository": "arXiv",
+    }
+
+
+def _verified_arxiv(arxiv_id: str, text: str, titles: list[str]) -> dict[str, Any] | None:
+    if not arxiv_id:
+        return None
+    record = _arxiv_record(arxiv_id)
+    if not record:
+        return None
+    remote_title = record["title"]
+    if _title_evidence(text, remote_title) or any(_title_match(title, remote_title) for title in titles):
+        return record
+    return None
+
+
+def _crossref_title(title: str, first_page: str = "", text: str = "") -> dict[str, Any] | None:
     """Resolve a DOI from a title for author manuscripts without an embedded DOI."""
-    lines = [re.sub(r"\s+", " ", line).strip() for line in first_page.splitlines()]
-    lines = [line for line in lines if len(line) >= 8 and not DOI_RE.search(line)]
-    queries = [" ".join(lines[:count]) for count in (2, 3) if len(lines) >= count]
-    queries.append(title[:500])
-    for candidate in dict.fromkeys(queries):
+    lines = _clean_title_lines(first_page)
+    queries: list[str] = []
+    if 15 <= len(title.strip()) <= 500:
+        queries.append(title[:500])
+    queries.extend(" ".join(lines[:count]) for count in (2, 3) if len(lines) >= count)
+    evidence_text = text or first_page
+    for candidate in dict.fromkeys(query for query in queries if len(query.strip()) >= 15):
         query = urllib.parse.urlencode({"query.title": candidate[:500], "rows": 10,
                                         "select": "DOI,title,type"})
         request = urllib.request.Request(
             f"https://api.crossref.org/works?{query}",
-            headers={"User-Agent": "LocalLiteratureWorkbench/1.0 (metadata lookup)"},
+        headers={"User-Agent": f"{USER_AGENT} (metadata lookup)"},
         )
-        with urllib.request.urlopen(request, timeout=15) as response:
-            data = json.loads(response.read(2_000_000).decode("utf-8"))
+        data = _fetch_json(request)
         for item in data.get("message", {}).get("items", []):
             remote_title = " ".join(item.get("title") or [])
             if (item.get("type") == "journal-article" and item.get("DOI")
-                    and _title_match(candidate, remote_title)):
+                    and (_title_evidence(evidence_text, remote_title)
+                         or _title_match(candidate, remote_title))):
                 return _crossref(str(item["DOI"]))
     return None
 
@@ -486,16 +705,74 @@ def _abstract(value: str) -> str:
     return re.sub(r"\s+", " ", _strip_markup(value or "")).strip()
 
 
-def _crossref_metadata(item: dict[str, Any]) -> dict[str, Any]:
+def _crossref_metadata(item: dict[str, Any], item_type: str = "journalArticle") -> dict[str, Any]:
     authors = item.get("author") or []
     creators = [{"creatorType": "author", "firstName": a.get("given", ""), "lastName": a.get("family", "")}
                 for a in authors if a.get("given") or a.get("family")]
     issued = item.get("issued", {}).get("date-parts", [[]])
     date = "-".join(map(str, issued[0])) if issued and issued[0] else ""
-    return {"itemType": "journalArticle", "title": " ".join(item.get("title") or []),
+    metadata = {"itemType": item_type, "title": _strip_markup(" ".join(item.get("title") or [])),
             "DOI": item.get("DOI", ""), "creators": creators, "date": date,
             "publicationTitle": " ".join(item.get("container-title") or []),
             "abstractNote": _abstract(item.get("abstract", "")), "patentNumber": ""}
+    if item_type == "preprint":
+        institutions = item.get("institution") or []
+        metadata["repository"] = (
+            " ".join(item.get("container-title") or [])
+            or next((str(entry.get("name", "")) for entry in institutions if entry.get("name")), "")
+            or "Crossref 预印本"
+        )
+        metadata["archiveID"] = item.get("DOI", "")
+    return metadata
+
+
+def _chinese_article_record(first_page: str, doi: str) -> dict[str, Any] | None:
+    """Recognize a Chinese journal article from its structured first page."""
+    if not doi:
+        return None
+    page = unicodedata.normalize("NFKC", first_page)
+    page = re.sub(r"[\ue000-\uf8ff]", "-", page)
+    if not (re.search(r"摘要", page) and re.search(r"关键词", page)):
+        return None
+    abstract_at = re.search(r"摘要", page)
+    front_lines = [re.sub(r"\s+", " ", line).strip() for line in page[:abstract_at.start()].splitlines()]
+    title = ""
+    for line in reversed(front_lines):
+        if not (5 <= len(line) <= 160):
+            continue
+        if re.search(
+            r"引用格式|作者|单位|通信作者|大学|学院|医院|研究所|中心|实验室|"
+            r"doi|http|@|\[J\]|第?\d+卷|·综述·",
+            line,
+            re.I,
+        ):
+            continue
+        if len(re.findall(r"[\u3400-\u9fff]", line)) >= 5:
+            title = line.strip(" .;:，。")
+            break
+    if not title:
+        return None
+    issue = re.search(r"\[J\]\s*[.．]\s*([^，,；;]+)", page, re.I)
+    abstract = re.search(r"摘要[:：]?\s*(.{20,2000}?)关键词", page, re.S)
+    year = re.search(r"(?:19|20)\d{2}", page[:abstract_at.start()])
+    category, keywords, category_basis = _classify(
+        title, abstract.group(1) if abstract else "",
+    )
+    return {
+        "metadata": {
+            "itemType": "journalArticle",
+            "title": title[:500],
+            "DOI": doi,
+            "creators": [],
+            "date": year.group(0) if year else "",
+            "publicationTitle": issue.group(1).strip()[:300] if issue else "",
+            "abstractNote": _abstract(abstract.group(1)).strip("】] [:：") if abstract else "",
+            "patentNumber": "",
+        },
+        "category": category,
+        "keywords": keywords,
+        "category_basis": category_basis,
+    }
 
 
 def _classify(title: str, abstract: str, is_patent: bool = False) -> tuple[str, list[str], str]:
@@ -507,7 +784,7 @@ def _classify(title: str, abstract: str, is_patent: bool = False) -> tuple[str, 
     ranked = sorted(scores.items(), key=lambda row: row[1], reverse=True)
     if ranked and ranked[0][1] >= 2 and (len(ranked) == 1 or ranked[0][1] > ranked[1][1]):
         return ranked[0][0], _keywords(title, abstract), "题名和摘要主题词"
-    return "研究方法与工具", _keywords(title, abstract), "分类线索不足，类别待核对"
+    return "研究方法与工具", _keywords(title, abstract), "默认研究类别"
 
 
 def _keywords(title: str, abstract: str) -> list[str]:
@@ -589,7 +866,8 @@ def _exclusion_reason(first_page: str, text: str = "", filename: str = "") -> st
         r"【考核试题】|考核试题|期末考核|期中考核|课程作业|课后作业|课堂练习|作业\s*\d+|homework\s*\d*",
         r"\blab\s*\d+.*(?:answer|习题|导论|陈淏文)?\b|\bhomework\s*\d*\b|\boop_ex\b",
         r"实验\s*\d+.*(?:层析|检测|色谱|指导|报告|预习)?",
-        r"实验步骤\s*–|实验步骤\s*[-—]|细胞转染及蛋白表达|亲和层析|蛋白纯化|活性检测|引物设计|pcr引物设计",
+        r"实验步骤\s*–|实验步骤\s*[-—]|细胞转染及蛋白表达|质粒提取|细胞转染|"
+        r"亲和层析|蛋白纯化|活性检测|引物设计|pcr引物设计",
         r"习题解答|课后习题|作业指导书|思考题解答",
     )
     if any(re.search(p, combined_head) for p in exercise_pats):
@@ -642,6 +920,93 @@ def _exclusion_reason(first_page: str, text: str = "", filename: str = "") -> st
     if "调研汇报" in combined_head or "流程调研" in combined_head:
         return "文件为主题调研汇报或调研总结，直接剔除不导入。"
 
+    # High-signal non-paper labels. These use explicit phrases rather than
+    # topical keywords so real articles mentioning the same subjects survive.
+    front_head = first_page[:2200].casefold()
+    compact_head = _compact_text(front_head)
+    evidence_groups = (
+        ("文献汇报、阅读笔记或汇报幻灯片",
+         r"文献汇报|文献精读|组会汇报|文献分享|^journal\s+club\b|^paper\s+presentation\b|"
+         r"^汇报人[:：]|其余组员|^\s*group\s*\d+"),
+        ("知情同意、行程单或行政表单",
+         r"知情同意书|^participant\s+consent\b|^informed\s+consent\s+form\b|"
+         r"高德地图.*行程单|taxi\s+itinerary|itinerary\s+receipt|"
+         r"准考证|活动参与证明|停电通知|学籍在线验证|奖项公示|获奖名单|"
+         r"公示时间|各参赛单位|^领队[:：]|^活动时间[:：]|任务书|"
+         r"conformance\s+request\s+guide|wage\s+determination"),
+        ("学生作业、实验报告或课程材料",
+         r"优秀作业|实验报告|实验指导|实验操作|课程介绍|课程大纲|教学大纲|"
+         r"课程作业|课后习题|习题集|练习册|\bquiz\s*0*\d+\b|"
+         r"\bexercises?\s*\d+\b|实验总流程设计图|^实验目的\b|辅导讲义|"
+         r"实验教学示范中心|^计算生物学[:：]|^exp\.\s*\d+"),
+        ("产品说明、质检报告或试剂手册",
+         r"产品说明书|使用说明书|用户手册|操作手册|安全数据表|质检报告|"
+         r"质控报告|试剂盒说明书|^product\s+manual\b|^user\s+manual\b"),
+        ("金融研究报告、新闻或杂志",
+         r"证券研究报告|投资评级|投资建议|年度策略|资本市场展望|"
+         r"证券研究团队|分析师证明|投资策略|new\s+york\s+times|\bnews\s+article\b|"
+         r"发布平台[:：].*官方博客"),
+        ("行政通知、表单或指南",
+         r"研究生培养计划|graduate\s+training\s+plan|^目录\s*$"),
+    )
+    for reason, pattern in evidence_groups:
+        if re.search(pattern, front_head, re.I | re.M):
+            return reason
+
+    filename_groups = (
+        ("文献补充材料",
+         r"(?:^|[_\-.])sm$|supplementary|supplemental|supporting[_\-. ]?information"),
+        ("数据图或组学导出文件",
+         r"(?:enrichment|volcano|heatmap|dotplot|go[_\-. ]?(?:bp|cc|mf|enrichment)|"
+         r"limma[_\-. ]?analysis|diff[_\-.].*(?:go|kegg)|pca[_\-. ]?plot|"
+         r"^(?:human|langya|nipah)_[a-z]_|趋势图)"),
+        ("课程资料或作业",
+         r"^(?:quiz\d*|ex(?:ercise)?\d*|homework\d*|hw\d*|cellbio\b|"
+         r"ch\d+(?:\.\d+)?|chapter\d+)|"
+         r"课程介绍|课程大纲|教学大纲|优秀作业|思维导图|辅导讲义|实验教学|"
+         r"专业实习|实践操作|羽毛球\s*\d+|实验报告"),
+        ("项目报告或汇报材料",
+         r"(?:^|[_\-. ])(?:pre|presentation|中期|结题|立项|开题|prp)(?:[_\-. ]|$)|"
+         r"智能管理平台立项|项目任务书|汇报材料|pre$|[（(]组[)）]|"
+         r"method.*v\d+|技术方案|方法说明"),
+        ("书籍或非学术读物",
+         r"volume\s*\d+|普通心理学|小说|诗集|文集|龙族|故去的呢喃"),
+        ("行政通知、表单或指南",
+         r"公示|通知|告知单|邀请函|招新|评优|任务书|评审规则|参赛组别|"
+         r"生源核对|宣传资料|准备会|日程|时程表|值班|入住手册|工作指南|"
+         r"简历模板|聊天曝光|官方公告|操作指南|检查报告模板|培养计划"),
+    )
+    filename_key = Path(filename).stem.casefold()
+    for reason, pattern in filename_groups:
+        if re.search(pattern, filename_key, re.I):
+            return reason
+
+    if re.search(r"supplementary\s+materials?\s+for|^\s*supporting\s+information\b",
+                 front_head[:1500], re.I):
+        return "文献补充材料"
+    if any(marker in compact_head for marker in (
+        "实验总流程设计图", "实验教学示范中心", "本书编写组",
+    )):
+        return "学生作业、实验报告或课程材料"
+    if len(text.strip()) < 2500 and re.search(r"group\d+", compact_head):
+        return "文献汇报、阅读笔记或汇报幻灯片"
+    if (0 < len(text.strip()) < 400 and re.search(r"[\u3400-\u9fff]", filename)
+            and not re.search(r"[0-9a-f]{16}", filename.casefold())):
+        return "正文内容不足，仅见标题或零散知识点，判定为课程资料或演示文稿。"
+    if re.search(
+        r"\bndc\b|dosage\s+and\s+administration|warnings\s+and\s+precautions|"
+        r"\binjection,\s+solution\b",
+        front_head,
+        re.I,
+    ):
+        return "药品标签或说明书"
+    if (len(text.strip()) < 5000 and re.search(r"《[^》]+》", first_page)
+            and re.search(r"作者[:：]|本书编写组", first_page)):
+        return "书籍或非学术读物"
+    if re.search(r"page\s+\d+\s+of\s+\d+", front_head, re.I) and re.search(
+        r"magazine|newspaper|nytimes\.com|newyorker\.com", front_head, re.I
+    ):
+        return "新闻、杂志或网页打印件"
     return ""
 
 
@@ -666,9 +1031,11 @@ def inspect_file(path: str | Path) -> dict[str, Any]:
     try:
         if suffix == ".pdf":
             text, first_page = _pdf_text(file_path)
+            pdf_metadata = _pdf_metadata(file_path)
             epub_title = ""
         else:
             text, first_page, epub_title = _safe_epub_text(file_path)
+            pdf_metadata = {}
     except (OSError, RuntimeError, ValueError, zipfile.BadZipFile, ElementTree.ParseError) as exc:
         result["reason"] = f"文件损坏或无法安全解析：{exc}"
         result["basis"] = "本地文件解析失败"
@@ -702,57 +1069,173 @@ def inspect_file(path: str | Path) -> dict[str, Any]:
         return result
 
     local_title = _local_title(first_page, epub_title)
-    if not local_title:
-        result["reason"] = "未能从首页提取题名，需人工核对。"
-        result["basis"] = "本地首页题名待核对"
+    metadata_title = _metadata_title(pdf_metadata, file_path.name)
+    metadata_doi = _first_doi(pdf_metadata.get("subject", "")) or _first_doi(pdf_metadata.get("keywords", ""))
+    doi = _first_doi(first_page) or _first_doi(text[:9000])
+    doi_source = "正文 DOI" if doi else ""
+    if not doi:
+        doi = _filename_doi(file_path.name)
+        doi_source = "文件名 DOI" if doi else ""
+    if not doi and metadata_doi:
+        doi = metadata_doi
+        doi_source = "PDF 元数据 DOI"
+    titles = list(dict.fromkeys(title for title in (local_title, metadata_title) if title))
+    arxiv_id = _arxiv_id(first_page, pdf_metadata, file_path.name)
+    if not doi and not titles:
+        result["reason"] = "未能从正文提取题名或 DOI，需人工核对。"
+        result["basis"] = "本地正文标识不足"
         return result
-    doi = _first_doi(first_page)
+
+    chinese_article = _chinese_article_record(first_page, doi)
+    if chinese_article:
+        result.update(
+            status="ready",
+            reason="中文期刊首页的题名、摘要、关键词与 DOI 相互支持。",
+            basis=f"本地{doi_source}；中文期刊结构化首页",
+            metadata=chinese_article["metadata"],
+            category=chinese_article["category"],
+            keywords=chinese_article["keywords"],
+        )
+        result["basis"] += f"；{chinese_article['category_basis']}"
+        result["sourceURL"] = f"https://doi.org/{doi}" if doi else ""
+        return result
+
+    remote = None
+    lookup_error = None
     try:
         if doi:
             remote = _crossref(doi)
+            if remote.get("type") == "component":
+                parent_doi = re.sub(r"(?i)^(10\.7554/elife\.\d+)\.\d+$", r"\1", doi)
+                if parent_doi != doi:
+                    parent = _crossref(parent_doi)
+                    if parent.get("type") == "journal-article":
+                        remote = parent
+                        doi = parent_doi
+                        doi_source = "正文 DOI"
             if remote.get("type") != "journal-article":
-                journal_version = _crossref_title(local_title, first_page)
-                if journal_version:
-                    remote = journal_version
-                    doi = ""
-        else:
-            remote = _crossref_title(local_title, first_page)
+                for title in titles:
+                    journal_version = _crossref_title(title, first_page, text)
+                    if journal_version:
+                        remote = journal_version
+                        doi = ""
+                        doi_source = ""
+                        break
+        elif titles:
+            for title in titles:
+                remote = _crossref_title(title, first_page, text)
+                if remote:
+                    break
     except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
-        detail = f"首页 DOI 为 {doi}，" if doi else "首页未发现 DOI，已按题名查询，"
-        result["reason"] = f"{detail}Crossref 查询失败，可稍后重试：{type(exc).__name__}。"
-        result["basis"] = "本地首页；Crossref 暂不可用"
+        lookup_error = exc
+
+    if (not remote or remote.get("type") not in ("journal-article", "posted-content", "preprint")) and arxiv_id:
+        arxiv_error = None
+        try:
+            preprint = _verified_arxiv(arxiv_id, text, titles)
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, ElementTree.ParseError) as exc:
+            preprint = None
+            arxiv_error = type(exc).__name__
+        if preprint:
+            result.update(
+                status="ready",
+                reason="arXiv 编号、预印本元数据和题名证据相互匹配。",
+                basis="本地 arXiv 标识；arXiv 元数据；题名证据",
+                metadata={
+                    "itemType": "preprint",
+                    "title": preprint["title"],
+                    "DOI": "",
+                    "creators": preprint["creators"],
+                    "date": preprint["date"],
+                    "publicationTitle": "",
+                    "abstractNote": preprint["abstractNote"],
+                    "patentNumber": "",
+                    "repository": preprint["repository"],
+                    "archiveID": preprint["archiveID"],
+                },
+                sourceURL=preprint["sourceURL"],
+            )
+            result["category"], result["keywords"], category_basis = _classify(
+                preprint["title"], preprint["abstractNote"]
+            )
+            result["basis"] += f"；{category_basis}"
+            return result
+        if lookup_error and arxiv_error:
+            result["reason"] = f"Crossref 与 arXiv 查询均失败，可稍后重试：{arxiv_error}。"
+            result["basis"] = "本地正文；外部元数据暂不可用"
+            return result
+
+    if lookup_error and not remote:
+        detail = f"{doi_source} 为 {doi}，" if doi else "正文未发现 DOI，已按题名查询，"
+        result["reason"] = f"{detail}Crossref 查询失败，可稍后重试：{type(lookup_error).__name__}。"
+        result["basis"] = "本地正文；Crossref 暂不可用"
         return result
     if not remote:
-        result["reason"] = "首页未发现 DOI，按题名也未匹配到 Crossref 期刊文章。"
-        result["basis"] = "本地首页与 Crossref 题名检索"
+        detail = f"{doi_source} 为 {doi}，" if doi else "正文未发现 DOI，"
+        if arxiv_id:
+            result["reason"] = f"{detail}arXiv 标识 {arxiv_id} 未获题名匹配的预印本元数据。"
+            result["basis"] = "本地正文与 arXiv 元数据"
+        else:
+            result["reason"] = f"{detail}按题名也未匹配到 Crossref 期刊文章或预印本记录。"
+            result["basis"] = "本地正文与 Crossref 题名检索"
         return result
-    result["metadata"] = _crossref_metadata(remote)
     returned_doi = _clean_doi(str(remote.get("DOI", "")))
     if doi and returned_doi != doi:
-        result["reason"] = "Crossref 返回的 DOI 与首页 DOI 不一致，需人工核对。"
-        result["basis"] = "本地首页 DOI 与 Crossref 返回 DOI 不匹配"
+        result["reason"] = "Crossref 返回的 DOI 与本地 DOI 不一致，需人工核对。"
+        result["basis"] = "本地 DOI 与 Crossref 返回 DOI 不匹配"
         return result
-    result["metadata"]["DOI"] = returned_doi
-    result["sourceURL"] = f"https://doi.org/{returned_doi}"
-    remote_title = result["metadata"]["title"]
-    if remote.get("type") != "journal-article":
-        result["reason"] = f"DOI 元数据类型为 {remote.get('type') or '未知'}，不是期刊文章，需核对。"
+    remote_type = remote.get("type")
+    if remote_type in ("posted-content", "preprint"):
+        result["metadata"] = _crossref_metadata(remote, "preprint")
+        result["metadata"]["DOI"] = returned_doi
+        result["sourceURL"] = f"https://doi.org/{returned_doi}" if returned_doi else ""
+        remote_title = result["metadata"]["title"]
+        if not (_title_evidence(text, remote_title) or any(_title_match(title, remote_title) for title in titles)):
+            result["reason"] = f"预印本题名证据与 Crossref 元数据不匹配（本地：{local_title[:100] or '未提取到题名'}），需核对。"
+            result["basis"] = "本地题名证据与 Crossref 预印本题名不匹配"
+            return result
+        result["status"] = "ready"
+        result["reason"] = "Crossref 预印本记录、DOI 与题名证据相互匹配。"
+        result["basis"] = "Crossref 预印本元数据；题名证据"
+        result["category"], result["keywords"], category_basis = _classify(
+            remote_title, result["metadata"]["abstractNote"]
+        )
+        result["basis"] += f"；{category_basis}"
+        return result
+    if remote_type != "journal-article":
+        result["reason"] = f"DOI 元数据类型为 {remote_type or '未知'}，不是期刊文章，需核对。"
         result["basis"] = "Crossref DOI元数据类型"
         return result
-    if not _title_match(local_title, remote_title):
-        result["reason"] = f"首页题名与 DOI 元数据题名不匹配（本地：{local_title[:100]}），疑似引用 DOI，需核对。"
-        result["basis"] = "首页 DOI 与 Crossref 题名不匹配"
+    result["metadata"] = _crossref_metadata(remote)
+    result["metadata"]["DOI"] = returned_doi
+    result["sourceURL"] = f"https://doi.org/{returned_doi}" if returned_doi else ""
+    remote_title = result["metadata"]["title"]
+    # An official publisher filename already encodes the exact DOI; requiring
+    # another title to be extracted would reject valid PDFs with cover pages.
+    title_evidence = _title_evidence(text, remote_title)
+    metadata_title_match = any(_title_match(title, remote_title) for title in titles)
+    if not (doi_source == "文件名 DOI" or title_evidence or metadata_title_match):
+        result["reason"] = f"正文或 PDF 元数据题名与 DOI 元数据题名不匹配（本地：{local_title[:100] or metadata_title[:100] or '未提取到题名'}），需核对。"
+        result["basis"] = "本地题名证据与 Crossref 题名不匹配"
         return result
-    if doi:
-        result["status"] = "ready"
-        result["reason"] = "首页 DOI、Crossref 期刊文章类型和题名均匹配。"
-        result["basis"] = "本地首页；Crossref DOI元数据"
+    result["status"] = "ready"
+    if doi_source == "文件名 DOI":
+        result["reason"] = "文件名 DOI、Crossref 期刊文章类型和 DOI 元数据相互匹配。"
+        result["basis"] = "本地文件名 DOI；Crossref DOI元数据"
+    elif doi_source == "PDF 元数据 DOI":
+        title_source = "PDF 元数据题名证据" if metadata_title_match else "正文题名证据"
+        result["reason"] = f"PDF 元数据 DOI、Crossref 期刊文章类型和{title_source}相互匹配。"
+        result["basis"] = f"PDF 元数据 DOI；Crossref DOI元数据；{title_source}"
+    elif doi:
+        title_source = "正文题名证据" if title_evidence else "PDF 元数据题名证据"
+        result["reason"] = f"{doi_source}、Crossref 期刊文章类型和{title_source}均匹配。"
+        result["basis"] = f"本地{doi_source}；Crossref DOI元数据；{title_source}"
     else:
-        result["reason"] = "题名与 Crossref 期刊文章匹配，但首页没有 DOI；请确认全文后可手动导入。"
-        result["basis"] = "本地首页题名；Crossref 题名检索；仅题名匹配"
-    result["category"], result["keywords"], category_basis = _classify(remote_title, result["metadata"]["abstractNote"])
-    if category_basis.startswith("分类线索不足"):
-        result["reason"] += " 主题线索不足，分类待核对。"
+        result["reason"] = "正文题名与 Crossref 期刊文章匹配并可由 DOI 唯一标识。"
+        result["basis"] = "本地正文题名证据；Crossref 题名检索"
+    result["category"], result["keywords"], category_basis = _classify(
+        remote_title, result["metadata"]["abstractNote"]
+    )
     result["basis"] += f"；{category_basis}"
     return result
 

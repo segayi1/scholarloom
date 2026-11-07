@@ -1,15 +1,24 @@
-data/workbench.sqlite*
-data/secrets.bin
-data/Library/
-data/guides.json
-data/seed.json
-data/zotero_snapshot.json
-data/instance.json
+/data/*
+!/data/.gitkeep
 *.log
 __pycache__/
 .pytest_cache/
 .playwright-cli/
+node_modules/
 output/
 .venv/
 .env
 .DS_Store
+
+# Local historical material, kept on disk but out of the source repository.
+/archive/
+
+# Generated test and benchmark output.
+/test-results/
+/experiments/
+
+# Local task logs and exploratory research notes.
+/tasks/
+/docs/experiments/
+/docs/research/
+/AGENTS.md

@@ -3,7 +3,10 @@ Dim fs, shell, folder, python, address, request, running, i
 Set fs = CreateObject("Scripting.FileSystemObject")
 Set shell = CreateObject("WScript.Shell")
 folder = fs.GetParentFolderName(WScript.ScriptFullName)
-python = "pythonw.exe"
+python = folder & "\.venv\Scripts\pythonw.exe"
+If Not fs.FileExists(python) Then
+  python = "pythonw.exe"
+End If
 address = "http://127.0.0.1:8766"
 running = False
 For i = 0 To 30
@@ -24,5 +27,5 @@ Next
 If running Then
   If WScript.Arguments.Count = 0 Then shell.Run address, 1, False
 Else
-  If WScript.Arguments.Count = 0 Then MsgBox "ScholarLoom could not start. Check Python or port 8766.", 48, "ScholarLoom"
+  If WScript.Arguments.Count = 0 Then MsgBox "ScholarLoom could not start. Run setup.cmd once, then launch again. Check Python and port 8766.", 48, "ScholarLoom"
 End If

@@ -14,7 +14,15 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -m unittest -v test_pipeline.py test_server.py
+      - run: >-
+          python -m unittest -v
+          test_evidence.py
+          test_pipeline.py
+          test_server.py
+          test_memory.py
+          test_figure.py
+          test_dossier.py
+          test_local_translation.py
 
   javascript:
     runs-on: ubuntu-latest
@@ -24,3 +32,6 @@ jobs:
         with:
           node-version: "20"
       - run: node --check web/app.js
+      - run: node --check web/translation.js
+      - run: node test_web.js
+      - run: node test_translation.js

@@ -7,6 +7,8 @@
   <title>ScholarLoom</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="vendor/pdfjs/pdf_viewer.css">
+  <script src="translation.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -32,13 +34,14 @@
   <main class="shell">
     <div id="load-error" class="notice error" role="alert" hidden></div>
     <nav class="tabs" aria-label="工作台页面">
-      <button class="active" data-view="home" aria-pressed="true"><span class="tab-index" aria-hidden="true">01</span><span>工作台</span></button>
-      <button data-view="library" aria-pressed="false"><span class="tab-index" aria-hidden="true">02</span><span>检索与导读</span></button>
-      <button data-view="compare" aria-pressed="false"><span class="tab-index" aria-hidden="true">03</span><span>对比阅读 <span id="compare-tab-count"></span></span></button>
-      <button data-view="settings" aria-pressed="false"><span class="tab-index" aria-hidden="true">04</span><span>设置</span></button>
+      <button data-view="home" aria-pressed="false"><span>工作台</span></button>
+      <button class="active" data-view="library" aria-pressed="true"><span>检索与导读</span></button>
+      <button data-view="compare" aria-pressed="false"><span>对比阅读 <span id="compare-tab-count"></span></span></button>
+      <button data-view="settings" aria-pressed="false"><span>设置</span></button>
+      <button data-view="reader" aria-pressed="false" id="reader-tab" hidden><span id="reader-tab-title">全文精读</span></button>
     </nav>
 
-    <section id="home-view">
+    <section id="home-view" hidden>
       <div class="home-dashboard">
         <section class="inbox-panel">
           <div class="section-head"><div><h2>收件箱</h2><p class="section-note">查看新文件识别、导入与摘要进度。</p></div><div class="actions"><button class="btn" id="scan-new">扫描新增文件</button><button class="btn" id="scan-existing">把已有下载文件加入识别</button></div></div>
@@ -47,19 +50,20 @@
           <div id="jobs" class="jobs"></div>
         </section>
         <aside class="home-rail">
+          <section class="rail-panel" id="resume-reading" hidden><h2>继续阅读</h2><button class="btn" id="resume-reading-button"></button></section>
           <section class="rail-panel recent-digest"><div class="section-head"><div><h2>近 7 天新增</h2><p class="section-note">从新近入库文献直接进入速读。</p></div></div><div id="recent-digest" class="digest-list"></div></section>
           <section class="rail-panel quick-entry"><div class="section-head"><div><h2>快速检索</h2><p class="section-note">搜索已有和新导入文献的题名、摘要、作者与关键词。</p></div><button class="text-button" data-view="library">打开文献检索 →</button></div><div class="quick-search"><input id="home-query" type="search" placeholder="输入题名、主题或关键词" aria-label="快速检索文献"><button class="btn primary" id="home-search">搜索文献</button></div></section>
         </aside>
       </div>
     </section>
 
-    <section id="library-view" hidden>
+    <section id="library-view">
       <div class="searchbox"><div class="search-modes" role="group" aria-label="检索范围"><button class="active" id="search-mode-local">本地文献</button><button id="search-mode-external">全网发现</button></div><div class="search-row"><label class="sr" for="query">搜索文献</label><input id="query" type="search" placeholder="例如：单B细胞抗体克隆 / CAR-T持久性 / PD-1表位"><button id="search-submit" class="btn primary">搜索</button><button id="reset" class="btn">重置</button></div>
-        <div class="filters"><select id="category" aria-label="研究主题"><option value="">全部主题</option></select><select id="kind" aria-label="文献类型"><option value="">全部类型</option><option value="journalArticle">期刊文献</option><option value="patent">专利</option></select><select id="year" aria-label="年份"><option value="">全部年份</option></select><select id="studyType" aria-label="研究形式"><option value="">全部研究形式</option></select><select id="readingStatus" aria-label="阅读状态"><option value="">全部阅读状态</option><option value="unread">未读</option><option value="reading">在读</option><option value="read">已读</option></select></div>
+        <div class="filters"><select id="category" aria-label="研究主题"><option value="">全部主题</option></select><select id="kind" aria-label="文献类型"><option value="">全部类型</option><option value="journalArticle">期刊文献</option><option value="preprint">预印本</option><option value="patent">专利</option></select><select id="year" aria-label="年份"><option value="">全部年份</option></select><select id="studyType" aria-label="研究形式"><option value="">全部研究形式</option></select><select id="readingStatus" aria-label="阅读状态"><option value="">全部阅读状态</option><option value="unread">未读</option><option value="reading">在读</option><option value="read">已读</option></select></div>
         <p class="hint">支持中英文题名、摘要、作者、关键词和常见主题词。新文献随服务状态更新加入检索。</p><div id="active-route" class="active-route" hidden></div>
       </div>
       <div class="library-layout"><aside><h2>研究主题</h2><div id="topic-grid" class="topic-list"></div><h2 class="side-title">问题路线</h2><div id="question-grid" class="question-list"></div></aside>
-        <div class="library-main"><div id="guide-panel" hidden></div><div class="result-head"><div id="result-count" class="count" aria-live="polite"></div><div id="result-hint" class="count">勾选 2–12 篇可对比或生成小综述</div></div><div id="results" class="cards"></div><button id="load-more" class="btn more" hidden>加载更多文献</button></div>
+        <div class="library-main"><div id="guide-panel" hidden></div><div class="result-head"><div id="result-count" class="count" aria-live="polite"></div><div id="result-hint" class="count">选择文献后可对比或批量生成速读</div></div><div class="summary-batch" id="summary-batch"><div class="summary-batch-copy"><strong>批量生成速读</strong><span id="summary-selection-count">未选择文献</span></div><div class="actions"><button class="text-button" id="summary-select-missing">选择全部待生成</button><button class="text-button" id="summary-clear-selection">清除选择</button><button class="btn primary" id="summary-generate" disabled>生成所选速读</button></div></div><div id="results" class="cards"></div><button id="load-more" class="btn more" hidden>加载更多文献</button></div>
       </div>
     </section>
 
@@ -68,9 +72,162 @@
     <section id="settings-view" hidden><h2>本机连接与摘要</h2><p class="section-note">设置保存在本机。授权与模型密钥仅由你在本机配置。</p>
       <div class="settings-grid">
         <article class="panel"><h3>下载监看</h3><label class="check-line"><input id="watch-enabled" type="checkbox">监看以下文件夹</label><p class="hint">新增的 PDF/EPUB 会进入收件箱识别。</p><label for="watch-folders">文件夹路径（每行一个绝对路径）</label><textarea id="watch-folders" rows="5" placeholder="例如：C:\Users\你\Downloads"></textarea><button class="btn" id="open-folder">打开文献备份文件夹</button></article>
-        <article class="panel"><h3>Zotero</h3><p id="zotero-setting-status" class="status-line"></p><p class="hint">连接后 ScholarLoom 可读写你的 Zotero 文献库。首次请在 Zotero 权限弹窗选择 Always Allow（始终允许），即可持续自动导入。之后可在 Zotero 高级设置撤销授权。</p><button class="btn primary" id="authorize">连接 Zotero</button></article>
-        <article class="panel"><h3>科研模型</h3><label for="model-url">API 地址</label><input id="model-url" type="url" placeholder="https://api.openai.com/v1" autocomplete="url"><label for="model-name">模型名称</label><input id="model-name" type="text" placeholder="填写模型名称" autocomplete="off"><label for="model-key">API key</label><input id="model-key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示保留当前密钥"><p id="key-status" class="hint"></p><label for="ai-output-language">AI 输出语言</label><select id="ai-output-language"><option value="auto">跟随界面</option><option value="zh">简体中文</option><option value="en">English</option></select><label class="check-line"><input id="auto-summary" type="checkbox">导入后按所选 AI 输出语言生成速读</label><p class="hint">速读、单篇问答与跨篇综述使用同一种输出语言。只会把当前文献的摘要或正文提取文本发送到你填写的模型。</p><div class="actions"><button class="btn primary" id="save-settings">保存全部设置</button><button class="btn" id="test-model">测试科研模型</button></div><p id="settings-message" class="message" aria-live="polite"></p></article>
+        <article class="panel"><h3>Zotero（可选）</h3><p id="zotero-setting-status" class="status-line"></p><p class="hint">文件监听和本地收文不依赖 Zotero。连接后 ScholarLoom 可读写你的 Zotero 文献库；首次请在 Zotero 权限弹窗选择 Always Allow（始终允许），即可持续自动写入。之后可在 Zotero 高级设置撤销授权。</p><button class="btn primary" id="authorize">连接 Zotero</button></article>
+        <article class="panel"><h3>科研模型</h3><label for="model-url">API 地址</label><input id="model-url" type="url" placeholder="https://api.openai.com/v1" autocomplete="url"><label for="model-name">模型名称</label><input id="model-name" type="text" placeholder="填写模型名称" autocomplete="off"><label for="model-key">API key</label><input id="model-key" type="password" autocomplete="off" spellcheck="false" placeholder="留空表示保留当前密钥"><p id="key-status" class="hint"></p><label for="ai-output-language">AI 输出语言</label><select id="ai-output-language"><option value="auto">跟随界面</option><option value="zh">简体中文</option><option value="en">English</option></select><label class="check-line"><input id="auto-summary" type="checkbox">新导入文献自动生成速读（可关闭；已有文献可在检索页多选生成）</label><p class="hint">速读、单篇问答与跨篇综述使用同一种输出语言。只会把当前文献的摘要或正文提取文本发送到你填写的模型。</p><div class="actions"><button class="btn primary" id="save-settings">保存全部设置</button><button class="btn" id="test-model">测试科研模型</button></div><p id="settings-message" class="message" aria-live="polite"></p></article>
+        <article class="panel translation-settings"><h3 id="translation-settings-title">翻译</h3><p class="hint" id="translation-privacy-note"></p><div class="translation-setting"><strong id="translation-browser-label">浏览器本地翻译</strong><p id="translation-browser-status" class="status-line" aria-live="polite">正在检测…</p><button class="btn" id="translation-browser-configure">检测并启用</button></div><div class="translation-setting"><strong id="translation-offline-label">离线翻译模型</strong><p id="translation-offline-status" class="status-line" aria-live="polite">正在读取安装状态…</p><p class="hint">离线包适合没有网络时不使用在线服务。译文质量会下降，数字、缩写和学科术语尤其需要核对。</p><button class="btn" id="translation-offline-download">下载离线模型</button></div></article>
         <article class="panel prompt-panel"><details open><summary><span><strong>场景科研提示词</strong><small>按实际审稿与证据综合任务定制</small></span></summary><p class="hint">每种场景都有中英文版本；模型会根据“AI 输出语言”使用对应版本。已保存的旧速读不会被改写。</p><div id="prompt-editor" class="prompt-editor"></div><div class="actions"><button class="btn" id="reset-prompts">恢复默认提示词</button><button class="btn primary" id="save-prompts">保存提示词</button></div></details></article>
+      </div>
+    </section>
+
+    <section id="reader-view" hidden>
+      <div id="reader-open-tabs" class="reader-open-tabs" role="tablist" aria-label="已打开的文献"></div>
+      <div class="reader-toolbar">
+        <button class="btn" id="reader-back-btn">← 返回检索</button>
+        <div class="reader-doc-info">
+          <h2 id="reader-doc-title">文献题名</h2>
+          <span id="reader-doc-meta" class="muted"></span>
+        </div>
+        <div class="reader-nav-controls">
+          <button class="btn icon-btn" id="reader-prev-page" title="上一页" aria-label="上一页">‹</button>
+          <span class="reader-page-indicator">第 <input id="reader-page-num" type="number" min="1" value="1" aria-label="当前页码"> / <span id="reader-total-pages">-</span> 页</span>
+          <button class="btn icon-btn" id="reader-next-page" title="下一页" aria-label="下一页">›</button>
+        </div>
+        <div class="reader-zoom-controls">
+          <button class="btn icon-btn" id="reader-zoom-out" title="缩小" aria-label="缩小">−</button>
+          <span id="reader-zoom-level">125%</span>
+          <button class="btn icon-btn" id="reader-zoom-in" title="放大" aria-label="放大">+</button>
+          <button class="btn" id="reader-zoom-fit">适应宽度</button>
+        </div>
+        <div class="reader-external-links">
+          <a id="reader-zotero-link" href="#" class="text-button" hidden>在 Zotero 定位 ↗</a>
+        </div>
+      </div>
+
+      <div class="reader-layout">
+        <div id="reader-viewport" class="reader-viewport">
+          <div id="reader-loading" class="reader-loading">正在加载 PDF 全文…</div>
+          <div id="reader-pages-container" class="reader-pages-container"></div>
+        </div>
+
+        <aside class="reader-sidebar">
+          <div class="reader-project-selector">
+            <label for="reader-project">课题 / Project</label>
+            <input id="reader-project" value="default" maxlength="120">
+          </div>
+          <div class="reader-sidebar-tabs">
+            <button class="reader-sidebar-tab active" data-sidebar-tab="assistant">AI 助手</button>
+            <button class="reader-sidebar-tab" data-sidebar-tab="notes">笔记</button>
+          </div>
+
+          <div id="reader-sidebar-assistant" class="reader-sidebar-pane">
+            <div id="reader-sidebar-qa">
+            <div class="qa-selection-box" id="qa-selection-box" hidden>
+              <div class="qa-selection-header">
+                <span class="pill">选中文本引用</span>
+                <span>
+                  <button class="text-button" id="qa-save-excerpt">保存摘录</button>
+                  <button class="text-button" id="qa-clear-selection">清除</button>
+                </span>
+              </div>
+              <blockquote id="qa-selection-text"></blockquote>
+              <button class="text-button" id="qa-translate" type="button">翻译选区</button>
+              <div id="qa-translation" aria-live="polite"><span id="qa-translation-status" role="status" data-translation-status></span><div id="qa-translation-result" data-translation-result></div><button class="text-button" id="qa-translation-copy" type="button" hidden>复制译文</button></div>
+            </div>
+
+            <section class="reader-guide-block">
+              <div class="reader-guide-head">
+                <div>
+                  <strong>速读</strong>
+                  <p>一句话判断、研究问题、方法与主要发现。</p>
+                </div>
+                <button class="text-button" id="reader-card-generate" type="button">生成速读</button>
+              </div>
+              <div id="reader-card-status" class="muted" role="status"></div>
+              <div id="reader-structured-card" class="reader-card-content"></div>
+            </section>
+
+            <section id="reader-sidebar-dossier" class="reader-guide-block dossier-pane">
+              <div class="reader-guide-head">
+                <div>
+                  <strong>深入理解</strong>
+                  <p>按原文页码梳理大纲、论证链、方法审查与可复用笔记。</p>
+                </div>
+                <button class="btn primary" id="dossier-generate">生成深读档案</button>
+              </div>
+              <span id="dossier-status" class="muted" role="status"></span>
+              <details class="reader-guide-focus">
+                <summary>聚焦问题（可选）</summary>
+                <input id="dossier-focus" maxlength="500" placeholder="例如：这篇文章如何排除替代解释？">
+              </details>
+              <div id="dossier-content"></div>
+            </section>
+
+            <div class="qa-input-section">
+              <label for="reader-ask-input">继续追问本文</label>
+              <textarea id="reader-ask-input" rows="3" placeholder="输入你想了解的问题，例如：本文的实验对象和对照是什么？核心机理是什么？"></textarea>
+              <div class="qa-actions">
+                <button class="btn primary" id="reader-ask-btn">提问</button>
+                <button class="text-button" id="reader-open-figure" type="button">在原文中框选图像</button>
+              </div>
+            </div>
+
+            <details class="reading-memory-panel">
+              <summary>阅读记忆 / Reading memory</summary>
+              <label><input type="checkbox" id="reader-use-memory" checked> 使用记忆 / Use memory</label>
+              <label for="reader-memory-kind">类型 / Kind</label>
+              <select id="reader-memory-kind"><option value="project">课题目标 / Project</option><option value="preference">表达偏好 / Preference</option><option value="hypothesis">待验证判断 / Hypothesis</option></select>
+              <label for="reader-memory-text">记忆内容 / Memory</label>
+              <textarea id="reader-memory-text" rows="2" maxlength="4000"></textarea>
+              <label for="reader-memory-slot">同主题修订名 / Revision topic</label>
+              <input id="reader-memory-slot" maxlength="120" placeholder="同一名称的新记忆替代旧记忆 / Same topic replaces old memory">
+              <button class="btn" id="reader-memory-save">保存 / Save</button>
+              <button class="btn" id="reader-memory-export">导出课题 / Export project</button>
+              <div id="reader-memory-list"></div>
+              <p>仅保存你确认的记忆；模型回答不自动成为事实。选中的历史和记忆会随问题发送给配置的模型。 / Only confirmed memories are saved. Selected history and memories are sent to your configured model.</p>
+            </details>
+            <div id="reader-context-report" role="status"></div>
+            <div id="reader-qa-history" class="reader-qa-history"></div>
+          </div>
+
+          <div id="reader-sidebar-figure" class="reader-sidebar-pane figure-pane" hidden>
+            <button class="text-button" id="reader-back-assistant">← 返回 AI 助手</button>
+            <p class="muted">框选图或子图，固定在侧栏中对照原文。课题沿用 AI 问答中的课题设置。</p>
+            <button class="btn primary" id="figure-select" aria-pressed="false">框选图像</button>
+            <p id="figure-status" class="muted" role="status">点击框选后，在 PDF 页面拖动选择区域。</p>
+            <div id="figure-current" hidden>
+              <img id="figure-preview" alt="选中的 PDF 图像区域">
+              <button class="text-button" id="figure-source">返回图像原页</button>
+              <label for="figure-number">图号（例如 2 或 S3）</label>
+              <input id="figure-number" maxlength="40">
+              <button class="btn" id="figure-find">查找图注和正文</button>
+              <div id="figure-context"></div>
+              <label for="figure-note">图像笔记</label>
+              <textarea id="figure-note" rows="4" maxlength="4000" placeholder="实验问题、对照、观察和待确认的问题"></textarea>
+              <button class="btn primary" id="figure-save">保存到当前课题</button>
+            </div>
+            <h3>已保存的图像笔记</h3>
+            <div id="figure-list"></div>
+          </div>
+
+          <div id="reader-sidebar-notes" class="reader-sidebar-pane" hidden>
+            <div class="reader-notes-section">
+              <label for="reader-status-select">阅读状态</label>
+              <select id="reader-status-select">
+                <option value="unread">未读</option>
+                <option value="reading">在读</option>
+                <option value="read">已读</option>
+              </select>
+              <label for="reader-notes-textarea">个人笔记与思考</label>
+              <textarea id="reader-notes-textarea" rows="10" placeholder="记录你对这篇文献的要点总结、实验假设、后续灵感或疑问…"></textarea>
+              <button class="btn primary" id="reader-save-notes">保存笔记</button>
+              <div class="reader-excerpts-section">
+                <h3>原文摘录 <span id="reader-excerpt-count"></span></h3>
+                <button class="btn" id="export-project-excerpts">导出课题摘录 Markdown</button>
+                <div id="reader-excerpts"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
     <footer class="foot">ScholarLoom · 文献原件保存在本机。Zotero 定位通过 Zotero 链接打开。</footer>

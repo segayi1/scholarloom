@@ -2,6 +2,36 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2.0.0 - 2026-11-06
+
+### Added
+
+- Local-first intake that completes without Zotero while preserving optional Zotero parent records, collections, tags, and linked attachments.
+- One-click file-monitoring control, prior watch-folder restoration, metadata recovery, verified arXiv and Crossref preprint intake, and local save/health paths.
+- Embedded PDF.js reader with browser-like multi-paper tabs, per-tab page and zoom state, session restoration, selection capture, and source-page navigation.
+- Version-bound evidence store, page-locatable citations, quote validation, coverage reporting, reading excerpts, and project Markdown export.
+- Persistent Q&amp;A history and explicit reading memory with project/paper scope, bounded recall, correction, deletion, JSON export, and disabled-recall mode.
+- On-demand reading dossiers with reading decisions, paper outline, argument structure, methods audit, reusable notes, evidence repair warnings, and stale-version detection.
+- Manual Figure crop selection, caption and mention candidates, project notes, high-resolution rendering, and staleness protection.
+- Selected-text translation through the browser Translator API, online fallback, and optional offline model, with visible privacy and quality boundaries.
+- Batch reading-card failure details and retries, online-consistent SQLite backup, library health checks, review-file opening, and project export.
+- Windows `setup.cmd` plus PowerShell and POSIX setup scripts, virtual-environment startup helpers, and a downloadable release archive.
+
+### Changed
+
+- Expanded intake exclusions so obvious courseware, forms, figures, and other non-literature files stay out of the default inbox while remaining in the audit filter.
+- Reading cards now include a structured reading decision while remaining backward compatible with historical cards.
+- Comparison synthesis can use current dossiers and falls back to structured cards for papers without one.
+- External service and application user agents identify ScholarLoom 2.0.0.
+- CI now runs the complete Python and JavaScript regression suites.
+
+### Fixed
+
+- Summary failures caused by truncated, empty, or reasoning-only model responses now remain visible and retryable.
+- Local-only documents suppress Zotero navigation links; malformed or unavailable PDFs report actionable errors instead of stale content.
+- Figure crops honor rotated page display coordinates; evidence references reject absent or stale PDF versions.
+- Offline translation is visibly labeled as a lower-quality fallback, and online translation no longer consumes research-model tokens.
+
 ## 1.4.0 - 2026-11-05
 
 ### Added
