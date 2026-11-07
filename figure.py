@@ -43,7 +43,7 @@ class FigureStore:
 
     @classmethod
     def inspect(cls, pdf_path, version, page, figure_number):
-        import fitz
+        import pymupdf as fitz
         if cls.version(pdf_path) != version:
             raise ValueError('PDF 内容版本已变化，请刷新文献后重试。')
         pdf = fitz.open(str(pdf_path))
@@ -63,7 +63,7 @@ class FigureStore:
             pdf.close()
 
     def create(self, paper_id, project, version, page, rect, figure_number, note, pdf_path):
-        import fitz
+        import pymupdf as fitz
         if self.version(pdf_path) != version:
             raise ValueError('PDF 内容版本已变化，请刷新文献后重新选区。')
         try:
@@ -121,7 +121,7 @@ class FigureStore:
 
     @staticmethod
     def crop(pdf_path, item):
-        import fitz
+        import pymupdf as fitz
         pdf = fitz.open(str(pdf_path))
         try:
             page = pdf.load_page(item['page'] - 1)

@@ -7,5 +7,5 @@ python="${PYTHON:-python3}"
 "$python" -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -c "import fitz, ctranslate2, sentencepiece; print('Dependencies ready.')"
+.venv/bin/python -c "import pymupdf, ctranslate2, sentencepiece; print('Dependencies ready.')"
 echo "Setup complete. Run ./start.sh to start ScholarLoom."

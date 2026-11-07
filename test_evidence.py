@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 try:
-    import fitz
+    import pymupdf as fitz
 except ImportError:
     fitz = None
 

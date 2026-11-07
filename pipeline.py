@@ -19,7 +19,7 @@ from typing import Any
 from xml.etree import ElementTree
 
 try:
-    import fitz
+    import pymupdf as fitz
 except ImportError:  # pragma: no cover - deployment environment supplies PyMuPDF
     fitz = None
 

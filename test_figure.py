@@ -7,7 +7,7 @@ from pathlib import Path
 import urllib.request
 import urllib.error
 
-import fitz
+import pymupdf as fitz
 import server
 
 from figure import FigureStore

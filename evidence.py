@@ -90,7 +90,7 @@ class EvidenceStore:
             return self._summary(existing)
 
         try:
-            import fitz
+            import pymupdf as fitz
         except ImportError as exc:
             raise EvidenceError("缺少 PDF 解析组件，请安装 PyMuPDF。") from exc
         try:

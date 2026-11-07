@@ -15,7 +15,7 @@ import pipeline
 import server
 
 try:
-    import fitz
+    import pymupdf as fitz
 except ImportError:
     fitz = None
 

@@ -32,7 +32,7 @@ if (-not (Test-Path -LiteralPath $venvPython)) {
 if ($LASTEXITCODE -ne 0) { throw 'Could not update pip.' }
 & $venvPython -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'Could not install ScholarLoom dependencies.' }
-& $venvPython -c "import fitz, ctranslate2, sentencepiece; print('Dependencies ready.')"
+& $venvPython -c "import pymupdf, ctranslate2, sentencepiece; print('Dependencies ready.')"
 if ($LASTEXITCODE -ne 0) { throw 'Dependency verification failed.' }
 
 Write-Host ''
