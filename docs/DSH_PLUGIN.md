@@ -1,6 +1,6 @@
 # DSH 文献工作台插件
 
-`dsh-plugin/` 把当前 ScholarLoom 文库接成一个 DeepSeek Harness 客户端插件。ScholarLoom 仍是题录、阅读卡、PDF、问答和阅读记忆的唯一数据源；插件不复制数据库，也不建立第二份阅读状态。
+`dsh-plugin/` 把当前 ScholarLoom 文库接成一个 DeepSeek Harness 客户端插件。本地版（根目录 `server.py` + `web/`）仍然可以单独使用，两者共用同一份 `data/`，配置互相独立。ScholarLoom 仍是题录、阅读卡、PDF、问答和阅读记忆的唯一数据源；插件不复制数据库，也不建立第二份阅读状态。完整安装/配置矩阵见 [CONFIGURATION.md](CONFIGURATION.md)。
 
 ## 组成
 
@@ -9,7 +9,8 @@
 | `dsh-plugin/lib/index.js` | Host 半：`/scholarloom` 回环代理、PDF Range 代理、PDF.js 静态资源代理、四个 Agent 工具、可选启动 `server.py`（默认关闭）。 |
 | `dsh-plugin/lib/client.js` | Client 半：`main` 全页工作台与 `sidebar.panellist` 入口，手写 lazy-CJS bundle，无需构建。 |
 | `dsh-plugin/cordis.patch.yml` | bundle 自带的 loader mount 行。 |
-| `dsh-plugin/install.ps1` | 把包复制进指定 profile 并幂等写入 mount 行；`-Uninstall` 可撤销。 |
+| `dsh-plugin/install.ps1` | 把包复制进指定 profile 并重建带配置的 mount 行；`-BaseUrl` / `-ProjectDir` / `-AutoStart` 可写配置，`-Uninstall` 可撤销。 |
+| `dsh-plugin/config.example.yml` | 可直接复制到 profile 的插件配置示例。 |
 
 ## 面板能力
 

@@ -15,7 +15,8 @@
     "README.md",
     "install.ps1",
     "scripts",
-    "LICENSE"
+    "LICENSE",
+    "config.example.yml"
   ],
   "dsh": {
     "bundle": {

@@ -9,6 +9,15 @@ ScholarLoom 仍是题录、PDF、阅读卡、问答和阅读记忆的唯一数�
 - 配套 ScholarLoom：`2.1.2`
 - 数据库兼容：现有 ScholarLoom 数据库，无需迁移
 
+## 本地版与插件版
+
+- **本地版**：仓库根目录的 `server.py` + `web/`，浏览器打开 `127.0.0.1:8766`；
+- **DSH 插件版**：`dsh-plugin/`，在 DSH 左侧「文献工作台」里使用；
+- 两者**可以同时存在**，共用同一份 `data/`；插件不建第二份数据库；
+- 两者**分别配置**：本地版配端口/模型/Zotero，插件配 `baseUrl`/`projectDir`/`autoStart`。
+
+完整对照、三种部署组合和常见问题见 [docs/CONFIGURATION.md](../docs/CONFIGURATION.md)。
+
 ## 为什么做这个
 
 ScholarLoom 网页版适合完整管理，但日常读论文时更希望：
@@ -100,7 +109,7 @@ powershell -ExecutionPolicy Bypass -File .\dsh-plugin\install.ps1 -Profile deskt
 
 - 复制 `dsh-plugin/` 到 `%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-scholarloom`；
 - 在 profile 的 `cordis.patch.yml` 写入一行带标记的 mount 配置；
-- 重复执行不会重复写入。
+- 重复执行会重建这一行，不会重复插入；可用 `-BaseUrl` / `-ProjectDir` / `-AutoStart` 更新配置。
 
 开发时可以用链接安装，改代码后切换插件即可重新加载：
 
@@ -113,6 +122,18 @@ powershell -ExecutionPolicy Bypass -File .\dsh-plugin\install.ps1 -Profile deskt
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\dsh-plugin\install.ps1 -Profile desktop -Uninstall
 ```
+
+安装时可以直接写配置：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\dsh-plugin\install.ps1 `
+  -Profile desktop `
+  -BaseUrl http://127.0.0.1:8767 `
+  -ProjectDir E:\path\to\scholarloom `
+  -AutoStart
+```
+
+也可以把 [config.example.yml](config.example.yml) 的 `insert` 块复制到 profile 的 `cordis.patch.yml`，或在 DSH 的「插件」页面编辑该行。重跑安装脚本会重建这个 managed 块，因此请不要把额外配置写在标记块内部。
 
 ### 作为 bundle 安装
 
@@ -148,7 +169,7 @@ dsh plugin --profile desktop add dsh-scholarloom
         autoStart: false
 ```
 
-`autoStart` 默认关闭，是为了避免旧服务停止时静默切换到另一个数据库。开启前请确认 `projectDir` 指向你想服务的文库。
+`autoStart` 默认关闭，是为了避免旧服务停止时静默切换到另一个数据库。开启前请确认 `projectDir` 指向你想服务的文库。机器可读示例见 [config.example.yml](config.example.yml)，两种形态的完整配置见 [docs/CONFIGURATION.md](../docs/CONFIGURATION.md)。
 
 ## 使用
 

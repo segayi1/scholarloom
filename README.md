@@ -104,6 +104,16 @@ The core reader and local search do not require an account. You choose whether t
 
 The optional [`dsh-plugin/`](dsh-plugin/) package mounts the same local library as a native DSH panel: library search, reading cards, in-window PDF reading, page-grounded Q&A, reading memory, reading notes, and agent tools (`scholarloom_search`, `scholarloom_paper`, `scholarloom_ask`, `scholarloom_status`). ScholarLoom remains the source of truth; the plugin adds no second database and sends no new remote request. See [dsh-plugin/README.md](dsh-plugin/README.md) for the plugin README and [docs/DSH_PLUGIN.md](docs/DSH_PLUGIN.md) for installation, configuration, and the security boundary.
 
+## Two ways to run, configured separately
+
+ScholarLoom can run as:
+
+1. **Local web app** — `server.py` + `web/`, opened at `http://127.0.0.1:8766`;
+2. **DSH plugin** — `dsh-plugin/`, opened from the DSH sidebar and connected to the local server;
+3. **Both at once** — the recommended setup; the plugin reads the same `data/` and never creates a second database.
+
+The two forms have separate configuration: the local app owns the port, model/Zotero settings and `data/`; the plugin has `baseUrl`, `projectDir`, `pythonPath`, `autoStart` and `requestTimeoutMs`. See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full matrix, Windows commands and troubleshooting.
+
 ## Download and automatic setup
 
 Every release contains the same source tree: no build step, package manager, or cloud account is required for local intake and reading.

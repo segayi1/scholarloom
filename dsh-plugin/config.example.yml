@@ -1,0 +1,24 @@
+# ScholarLoom DSH plugin configuration example.
+#
+# Copy this insert block into:
+#   %USERPROFILE%\.dsh\profiles\<profile>\cordis.patch.yml
+# or edit the installed `scholarloom-workbench` row in DSH's Plugins page.
+#
+# The plugin connects to a running local ScholarLoom server. It does not create
+# its own database; `baseUrl` must match the server's --port.
+- insert:
+    - id: scholarloom-workbench
+      name: 'dsh-scholarloom'
+      config:
+        # Local ScholarLoom server. Change the port here if you start it with
+        # `python server.py --port 8767`.
+        baseUrl: http://127.0.0.1:8766
+        # Directory containing server.py. Only used when autoStart is true.
+        projectDir: ''
+        # Explicit Python executable; empty means .venv/Scripts/python first,
+        # then `python` from PATH.
+        pythonPath: ''
+        # Start server.py when the health check fails. Keep false unless you
+        # are sure projectDir points at the library you intend to serve.
+        autoStart: false
+        requestTimeoutMs: 60000

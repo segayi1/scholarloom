@@ -2,7 +2,13 @@ param(
   [string]$Profile = "desktop",
   [switch]$Uninstall,
   [switch]$NoPatch,
-  [switch]$Link
+  [switch]$Link,
+  [string]$BaseUrl = "http://127.0.0.1:8766",
+  [string]$ProjectDir = "",
+  [string]$PythonPath = "",
+  [switch]$AutoStart,
+  [int]$RequestTimeoutMs = 60000,
+  [switch]$PrintConfig
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,6 +20,37 @@ $patch = Join-Path $profileDir "cordis.patch.yml"
 $markerStart = "# >>> dsh-scholarloom workbench (managed) >>>"
 $markerEnd = "# <<< dsh-scholarloom workbench <<<"
 $utf8 = New-Object System.Text.UTF8Encoding $false
+
+if ($RequestTimeoutMs -lt 1) {
+  throw "RequestTimeoutMs must be a positive integer."
+}
+
+function YamlQuote([string]$Value) {
+  return "'" + ($Value -replace "'", "''") + "'"
+}
+
+function New-MountBlock {
+  $autoStartValue = if ($AutoStart) { "true" } else { "false" }
+  return @"
+
+$markerStart
+- insert:
+    - id: scholarloom-workbench
+      name: '$packageName'
+      config:
+        baseUrl: $(YamlQuote $BaseUrl)
+        projectDir: $(YamlQuote $ProjectDir)
+        pythonPath: $(YamlQuote $PythonPath)
+        autoStart: $autoStartValue
+        requestTimeoutMs: $RequestTimeoutMs
+$markerEnd
+"@
+}
+
+if ($PrintConfig) {
+  Write-Output (New-MountBlock)
+  exit 0
+}
 
 if (-not (Test-Path $profileDir)) {
   throw "DSH profile not found: $profileDir"
@@ -59,24 +96,20 @@ if ($Link) {
   Copy-Item -LiteralPath (Join-Path $source "package.json") -Destination $target -Force
   Copy-Item -LiteralPath (Join-Path $source "cordis.patch.yml") -Destination $target -Force
   Copy-Item -LiteralPath (Join-Path $source "lib") -Destination $target -Recurse -Force
+  Copy-Item -LiteralPath (Join-Path $source "scripts") -Destination $target -Recurse -Force
   Copy-Item -LiteralPath (Join-Path $source "README.md") -Destination $target -Force
+  Copy-Item -LiteralPath (Join-Path $source "LICENSE") -Destination $target -Force
+  Copy-Item -LiteralPath (Join-Path $source "config.example.yml") -Destination $target -Force
   Copy-Item -LiteralPath (Join-Path $source "install.ps1") -Destination $target -Force
 }
 
 if (-not $NoPatch) {
-  $text = if (Test-Path $patch) { Get-Content -LiteralPath $patch -Raw -Encoding UTF8 } else { "" }
-  if ($text -notmatch [regex]::Escape($markerStart)) {
-    $block = @"
-
-$markerStart
-- insert:
-    - id: scholarloom-workbench
-      name: '$packageName'
-$markerEnd
-"@
-    [IO.File]::AppendAllText($patch, $block, $utf8)
-  }
+  Remove-MountBlock -Path $patch
+  [IO.File]::AppendAllText($patch, (New-MountBlock), $utf8)
 }
 
 Write-Host "Installed $packageName into $target"
+Write-Host "  baseUrl: $BaseUrl"
+Write-Host "  projectDir: $ProjectDir"
+Write-Host "  autoStart: $($AutoStart.IsPresent)"
 Write-Host "If the panel does not appear, restart DSH or toggle the 'scholarloom-workbench' loader entry."
