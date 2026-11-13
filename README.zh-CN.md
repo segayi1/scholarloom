@@ -40,6 +40,29 @@
   <img src="docs/assets/scholarloom-workflow.zh-CN.svg" alt="ScholarLoom 全流程工作流" width="100%">
 </div>
 
+## 60 秒看懂 ScholarLoom
+
+<table>
+  <tr>
+    <td width="25%"><strong>1 · 放入文献</strong><br>等待下载完成、核对题录，信息不确定的文件留在待核对队列。</td>
+    <td width="25%"><strong>2 · 带着证据阅读</strong><br>向论文提问、查看 Figure，并从回答跳回支撑它的原文页。</td>
+    <td width="25%"><strong>3 · 积累课题上下文</strong><br>保存摘录、项目记忆、阅读会话，并检索全文段落。</td>
+    <td width="25%"><strong>4 · 连接证据</strong><br>在可编辑矩阵中比较论文，或用有限全文段落生成调研初稿。</td>
+  </tr>
+</table>
+
+<p align="center"><strong>先从一篇论文开始，保留证据，让课题自然积累。</strong></p>
+
+### 按你的目标开始
+
+| 你想要…… | 从这里开始 |
+| :--- | :--- |
+| 清理堆满 PDF 的下载文件夹 | [快速开始](#快速开始) · [使用指南](docs/USAGE.md) |
+| 提问后能回到原文 | [阅读与问答](docs/USAGE.md#evidence-grounded-reading) |
+| 比较多篇论文 | [项目检索与综述](docs/USAGE.md#comparison-synthesis) |
+| 接入已有文献库 | [可选 Zotero 授权](#授权与可选服务) |
+| 了解数据边界 | [安全策略](SECURITY.md) · [数据格式](docs/DATA_FORMAT.md) |
+
 ## 为什么选 ScholarLoom
 
 ### 收文先替你清理杂乱
@@ -57,6 +80,16 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 ### 本地工作台，始终属于你
 
 工作台运行在 `127.0.0.1`，资料库使用 SQLite 和本地文件，需要文献整理时再连接 Zotero。AI 功能支持任意 OpenAI Chat Completions 兼容接口，也可以先只使用自动收文和阅读工作台。
+
+### 哪些内容留在本地
+
+| 默认留在你的电脑上 | 只有使用对应功能时才会发送 |
+| :--- | :--- |
+| PDF、SQLite 资料库、阅读记忆、课题初稿和会话历史 | 选中的段落发送到你配置的 AI 接口 |
+| 本地设置中受保护的模型凭据 | 通过 Crossref、arXiv 或 OpenAlex 查询题录 |
+| 浏览器界面和 PDF.js 阅读器 | 选中的文本发送到在线翻译后备服务 |
+
+核心阅读和本地检索不需要账户。是否配置 AI 接口、连接 Zotero 或使用在线翻译，由你决定。
 
 ## 2.1 亮点
 
@@ -154,6 +187,7 @@ Python 3.12 · SQLite · PDF.js · Crossref · arXiv · OpenAlex · 可选 Zoter
 | [参与贡献](CONTRIBUTING.md) | 开发环境与贡献流程 |
 | [安全策略](SECURITY.md) | 漏洞报告与信任边界 |
 | [更新日志](CHANGELOG.md) | 各版本的功能与修复 |
+| [小红书文案](docs/promotion/xiaohongshu.md) | 可直接改写发布的推广帖子与配图建议 |
 
 ## 贡献者
 

@@ -40,6 +40,29 @@
   <img src="docs/assets/scholarloom-workflow.svg" alt="ScholarLoom end-to-end workflow" width="100%">
 </div>
 
+## The 60-second tour
+
+<table>
+  <tr>
+    <td width="25%"><strong>1 · Drop papers</strong><br>ScholarLoom waits for downloads to settle, checks the record, and keeps uncertain files in review.</td>
+    <td width="25%"><strong>2 · Read with anchors</strong><br>Ask about a paper, inspect figures, and jump from an answer back to the supporting page.</td>
+    <td width="25%"><strong>3 · Build context</strong><br>Save excerpts, project memory, reading sessions, and searchable full-text passages.</td>
+    <td width="25%"><strong>4 · Connect evidence</strong><br>Compare papers in an editable matrix or turn bounded passages into a focused draft.</td>
+  </tr>
+</table>
+
+<p align="center"><strong>Start with one paper. Keep the evidence. Let the project grow.</strong></p>
+
+### Pick your starting point
+
+| You want to… | Start here |
+| :--- | :--- |
+| Clean up a busy download folder | [Quick start](#quick-start) · [Usage guide](docs/USAGE.md) |
+| Ask questions that return to the PDF | [Evidence and Q&A](docs/USAGE.md#evidence-grounded-reading) |
+| Compare several papers | [Project retrieval and synthesis](docs/USAGE.md#comparison-synthesis) |
+| Connect your existing library | [Optional Zotero authorization](#authorizations-and-optional-services) |
+| Understand the trust boundary | [Security policy](SECURITY.md) · [Data format](docs/DATA_FORMAT.md) |
+
 ## Why ScholarLoom
 
 ### Intake that removes clutter
@@ -57,6 +80,16 @@ Save excerpts, project context, preferences, and completed Q&A. Project and pape
 ### A workspace that stays yours
 
 Run the workbench on `127.0.0.1`, keep the library in SQLite and local files, and connect Zotero only when you want bibliographic organization. Use any OpenAI-compatible Chat Completions endpoint for AI features, or keep the intake and reading workspace running without one.
+
+### What stays local
+
+| On your machine by default | Sent only when the feature needs it |
+| :--- | :--- |
+| PDFs, SQLite library, reading memory, project drafts, and session history | Selected passages sent to the configured AI endpoint |
+| Model credentials protected by the local settings store | Metadata lookups through Crossref, arXiv, or OpenAlex |
+| Browser UI and PDF.js reader | Selected text sent to the online translation fallback |
+
+The core reader and local search do not require an account. You choose whether to configure an AI endpoint, connect Zotero, or use online translation.
 
 ## New in 2.1
 
@@ -154,6 +187,7 @@ The server binds to localhost, and the browser UI ships with the project. Develo
 | [Contributing](CONTRIBUTING.md) | Development setup and contribution flow |
 | [Security policy](SECURITY.md) | Vulnerability reporting and trust boundaries |
 | [Changelog](CHANGELOG.md) | Features and fixes by release |
+| [Xiaohongshu copy](docs/promotion/xiaohongshu.md) | Ready-to-adapt launch posts and image suggestions |
 
 ## Contributors
 
