@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2.1.1 - 2026-11-12
+
+### Fixed
+
+- The Windows launcher CI check now provides its own temporary Python shim, so it tests launcher decisions on a clean runner instead of depending on a local `.venv`.
+
 ## 2.1.0 - 2026-11-12
 
 ### Added

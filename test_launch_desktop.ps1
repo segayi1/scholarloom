@@ -26,6 +26,14 @@ function Start-Process {
     if ($FilePath -like 'http:*') { $global:opened++ } else { $global:startedServer++ }
 }
 
+$pythonw = Join-Path $PSScriptRoot '.venv\Scripts\pythonw.exe'
+$createdPythonw = $false
+if (!(Test-Path -LiteralPath $pythonw)) {
+    New-Item -ItemType Directory -Path (Split-Path $pythonw -Parent) -Force | Out-Null
+    Set-Content -LiteralPath $pythonw -Value ''
+    $createdPythonw = $true
+}
+
 function Assert-Launch($name, $hasListener, $started, $summary, $connected, $foreign, $expectedStop, $expectedStart, $expectedOpen, $busyJob = $false, $authorization = 'idle', $fullReadActive = 0) {
     $global:hasListener = $hasListener; $global:started = $started; $global:summary = $summary
     $global:connected = $connected; $global:foreign = $foreign
@@ -38,12 +46,25 @@ function Assert-Launch($name, $hasListener, $started, $summary, $connected, $for
     Write-Host "$name passed"
 }
 
-Assert-Launch 'Fresh start' $false (Get-Date) 'done' $false $false 0 1 1
-Assert-Launch 'Reuse current service' $true (Get-Date).AddDays(1) 'done' $false $false 0 0 1
-Assert-Launch 'Restart updated service' $true (Get-Date).AddDays(-1) 'done' $false $false 1 1 1
-Assert-Launch 'Keep running work' $true (Get-Date).AddDays(-1) 'running' $false $false 0 0 0
-Assert-Launch 'Keep active import' $true (Get-Date).AddDays(-1) 'done' $false $false 0 0 0 $true
-Assert-Launch 'Keep active full read' $true (Get-Date).AddDays(-1) 'done' $false $false 0 0 0 $false 'idle' 1
-Assert-Launch 'Keep pending authorization' $true (Get-Date).AddDays(-1) 'done' $false $false 0 0 0 $false 'pending'
-Assert-Launch 'Keep active request' $true (Get-Date).AddDays(-1) 'done' $true $false 0 0 0
-Assert-Launch 'Protect other service' $true (Get-Date).AddDays(-1) 'done' $false $true 0 0 0
+try {
+    Assert-Launch 'Fresh start' $false (Get-Date) 'done' $false $false 0 1 1
+    Assert-Launch 'Reuse current service' $true (Get-Date).AddDays(1) 'done' $false $false 0 0 1
+    Assert-Launch 'Restart updated service' $true (Get-Date).AddDays(-1) 'done' $false $false 1 1 1
+    Assert-Launch 'Keep running work' $true (Get-Date).AddDays(-1) 'running' $false $false 0 0 0
+    Assert-Launch 'Keep active import' $true (Get-Date).AddDays(-1) 'done' $false $false 0 0 0 $true
+    Assert-Launch 'Keep active full read' $true (Get-Date).AddDays(-1) 'done' $false $false 0 0 0 $false 'idle' 1
+    Assert-Launch 'Keep pending authorization' $true (Get-Date).AddDays(-1) 'done' $false $false 0 0 0 $false 'pending'
+    Assert-Launch 'Keep active request' $true (Get-Date).AddDays(-1) 'done' $true $false 0 0 0
+    Assert-Launch 'Protect other service' $true (Get-Date).AddDays(-1) 'done' $false $true 0 0 0
+} finally {
+    if ($createdPythonw) {
+        Remove-Item -LiteralPath $pythonw -Force -ErrorAction SilentlyContinue
+        $scripts = Split-Path $pythonw -Parent
+        $venv = Split-Path $scripts -Parent
+        foreach ($dir in @($scripts, $venv)) {
+            if ((Test-Path -LiteralPath $dir) -and -not (Get-ChildItem -LiteralPath $dir -Force)) {
+                Remove-Item -LiteralPath $dir -Force
+            }
+        }
+    }
+}

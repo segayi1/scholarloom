@@ -74,11 +74,11 @@ Every release contains the same source tree: no build step, package manager, or 
 ### Windows PowerShell
 
 ```powershell
-$zip = "$env:TEMP\ScholarLoom-2.1.0.zip"
+$zip = "$env:TEMP\ScholarLoom-2.1.1.zip"
 $dst = Join-Path $env:LOCALAPPDATA "ScholarLoom"
-Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.zip" -OutFile $zip
+Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.zip" -OutFile $zip
 Expand-Archive $zip $dst -Force
-Set-Location (Join-Path $dst "ScholarLoom-2.1.0")
+Set-Location (Join-Path $dst "ScholarLoom-2.1.1")
 .\setup.ps1
 ```
 
@@ -87,9 +87,9 @@ Then double-click `launch.vbs`.
 ### macOS and Linux
 
 ```sh
-curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.tar.gz -o /tmp/ScholarLoom-2.1.0.tar.gz
-tar -xzf /tmp/ScholarLoom-2.1.0.tar.gz
-cd ScholarLoom-2.1.0
+curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.tar.gz -o /tmp/ScholarLoom-2.1.1.tar.gz
+tar -xzf /tmp/ScholarLoom-2.1.1.tar.gz
+cd ScholarLoom-2.1.1
 ./setup.sh
 ./start.sh
 ```
@@ -111,8 +111,8 @@ python install-translation-model.py
 ### macOS and Linux
 
 ```sh
-tar -xzf ScholarLoom-2.1.0.tar.gz
-cd ScholarLoom-2.1.0
+tar -xzf ScholarLoom-2.1.1.tar.gz
+cd ScholarLoom-2.1.1
 chmod +x setup.sh start.sh
 ./setup.sh
 ./start.sh

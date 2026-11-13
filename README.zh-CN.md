@@ -74,11 +74,11 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 ### Windows PowerShell
 
 ```powershell
-$zip = "$env:TEMP\ScholarLoom-2.1.0.zip"
+$zip = "$env:TEMP\ScholarLoom-2.1.1.zip"
 $dst = Join-Path $env:LOCALAPPDATA "ScholarLoom"
-Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.zip" -OutFile $zip
+Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.zip" -OutFile $zip
 Expand-Archive $zip $dst -Force
-Set-Location (Join-Path $dst "ScholarLoom-2.1.0")
+Set-Location (Join-Path $dst "ScholarLoom-2.1.1")
 .\setup.ps1
 ```
 
@@ -87,9 +87,9 @@ Set-Location (Join-Path $dst "ScholarLoom-2.1.0")
 ### macOS 和 Linux
 
 ```sh
-curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.tar.gz -o /tmp/ScholarLoom-2.1.0.tar.gz
-tar -xzf /tmp/ScholarLoom-2.1.0.tar.gz
-cd ScholarLoom-2.1.0
+curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.tar.gz -o /tmp/ScholarLoom-2.1.1.tar.gz
+tar -xzf /tmp/ScholarLoom-2.1.1.tar.gz
+cd ScholarLoom-2.1.1
 ./setup.sh
 ./start.sh
 ```
@@ -111,8 +111,8 @@ python install-translation-model.py
 ### macOS 和 Linux
 
 ```sh
-tar -xzf ScholarLoom-2.1.0.tar.gz
-cd ScholarLoom-2.1.0
+tar -xzf ScholarLoom-2.1.1.tar.gz
+cd ScholarLoom-2.1.1
 chmod +x setup.sh start.sh
 ./setup.sh
 ./start.sh

@@ -64,14 +64,14 @@ The product direction is broader than PDF chat: ScholarLoom should become the re
 
 - Repository: `https://github.com/segayi1/scholarloom`
 - Branch: `main`
-- Source release: `v2.1.0`
+- Source release: `v2.1.1`
 - Release scope: local-first intake, evidence reader, whole-paper deep reading, project retrieval, evidence matrices, synthesis drafts, named sessions, dossiers, figures, translation, and recovery controls
 - Runtime: Python 3.12, standard-library HTTP server, SQLite, PyMuPDF
 - Frontend: plain HTML, CSS, and JavaScript; no build step
 - Standard launcher address: `http://127.0.0.1:8766`
 - Local desktop launcher: `launch-desktop.ps1`, `http://127.0.0.1:8767`; historical 8766 runtime remains separate
 
-Release 2.1.0 includes the reader, deep-reading, retrieval, matrix, session and
+Releases 2.1.x include the reader, deep-reading, retrieval, matrix, session and
 desktop-launcher changes described below. Earlier acceptance records retain
 their original dates and scope; the latest source regression and release gates
 are recorded separately.
