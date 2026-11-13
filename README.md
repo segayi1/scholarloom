@@ -100,6 +100,10 @@ The core reader and local search do not require an account. You choose whether t
 - **Reader and desktop workflow.** Work with parallel tabs, fixed navigation and scrolling, adjustable reader columns, paragraph interpretation, manual figure links, and a Windows launcher with in-progress work protection.
 - **Stronger evidence boundaries.** Validate overviews, surface formulation conflicts, reject stale evidence positions, and label model interpretations separately from paper evidence.
 
+## DeepSeek Harness workbench
+
+The optional [`dsh-plugin/`](dsh-plugin/) package mounts the same local library as a native DSH panel: library search, reading cards, in-window PDF reading, page-grounded Q&A, reading memory, reading notes, and agent tools (`scholarloom_search`, `scholarloom_paper`, `scholarloom_ask`, `scholarloom_status`). ScholarLoom remains the source of truth; the plugin adds no second database and sends no new remote request. See [dsh-plugin/README.md](dsh-plugin/README.md) for the plugin README and [docs/DSH_PLUGIN.md](docs/DSH_PLUGIN.md) for installation, configuration, and the security boundary.
+
 ## Download and automatic setup
 
 Every release contains the same source tree: no build step, package manager, or cloud account is required for local intake and reading.

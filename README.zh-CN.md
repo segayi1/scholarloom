@@ -100,6 +100,10 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 - **阅读与桌面工作流。** 并行标签页、固定导航与滚动、可调阅读栏、段落解读、手动图表关联，以及带进行中任务保护的 Windows 启动器。
 - **更明确的证据边界。** 校验概述、提示配方冲突、拒绝过期证据位置，并区分模型解释与论文证据。
 
+## DeepSeek Harness 文献工作台
+
+可选的 [`dsh-plugin/`](dsh-plugin/) 把同一个本地文库接成 DSH 原生面板：文库检索、阅读卡、窗口内 PDF 阅读、带页码证据的问答、阅读记忆、阅读笔记和 Agent 工具（`scholarloom_search`、`scholarloom_paper`、`scholarloom_ask`、`scholarloom_status`）。ScholarLoom 仍是唯一数据源；插件不建立第二份数据库，也不新增远端请求。插件 README 见 [dsh-plugin/README.md](dsh-plugin/README.md)，安装、配置与安全边界见 [docs/DSH_PLUGIN.md](docs/DSH_PLUGIN.md)。
+
 ## 下载与自动安装
 
 发布包就是完整源码，不需要构建步骤、包管理器或云端账户即可使用本地收文和阅读功能。

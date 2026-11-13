@@ -217,6 +217,7 @@ class Workbench:
         self.db = sqlite3.connect(self.data / 'workbench.sqlite', check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript('''PRAGMA journal_mode=WAL;
+          PRAGMA temp_store=MEMORY;
           CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
           CREATE TABLE IF NOT EXISTS documents (key TEXT PRIMARY KEY, value TEXT NOT NULL);
           CREATE TABLE IF NOT EXISTS seen (path TEXT PRIMARY KEY, size INTEGER, mtime INTEGER, observed REAL, baseline INTEGER);

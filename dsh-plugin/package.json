@@ -1,0 +1,51 @@
+{
+  "name": "dsh-scholarloom",
+  "version": "0.1.3",
+  "description": "ScholarLoom literature workbench for DeepSeek Harness: a native reading panel over the local ScholarLoom library, with page-grounded Q&A and agent tools.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "install.ps1",
+    "scripts",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "scholarloom",
+    "literature",
+    "paper",
+    "reader"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.3",
+    "@deepseek-ai/schemastery": "~3.19.0"
+  },
+  "license": "MIT",
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  }
+}

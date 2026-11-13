@@ -1,0 +1,4 @@
+# dsh-scholarloom bundle patch: one loader row for the workbench.
+- insert:
+    - id: scholarloom-workbench
+      name: 'dsh-scholarloom'
