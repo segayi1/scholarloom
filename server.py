@@ -36,6 +36,7 @@ from full_read import (FullReadStore, PROMPT_VERSION, SYNTHESIS_PROMPT_VERSION, 
 from memory import MemoryStore, build_context, input_units, scope, terms
 
 ROOT = Path(__file__).resolve().parent
+_UNSET = object()
 APP_VERSION = '2.1.2'
 BASE = 'http://127.0.0.1:23119/api/'
 UA = f'ScholarLoom/{APP_VERSION}'
@@ -791,18 +792,18 @@ class Workbench:
         with self.lock, self.db:
             self.db.execute('INSERT OR REPLACE INTO documents VALUES (?,?)', (row['key'], dumps(row)))
 
-    def set_document_state(self, key, status, note):
-        status=str(status or 'unread')
-        note=str(note or '').strip()
-        if status not in ('unread','reading','read'):
-            raise ValueError('阅读状态无效。')
-        if len(note)>4000:
-            raise ValueError('阅读笔记请控制在 4000 字以内。')
+    def set_document_state(self, key, status=_UNSET, note=_UNSET):
         with self.lock, self.db:
             found=self.db.execute('SELECT value FROM documents WHERE key=?',(str(key),)).fetchone()
             if not found:
                 raise ValueError('找不到该文献。')
             row=json.loads(found[0])
+            status = row.get('readingStatus', 'unread') if status is _UNSET else str(status or 'unread')
+            note = row.get('readingNote', '') if note is _UNSET else str(note or '').strip()
+            if status not in ('unread','reading','read'):
+                raise ValueError('阅读状态无效。')
+            if len(note)>4000:
+                raise ValueError('阅读笔记请控制在 4000 字以内。')
             row.update(readingStatus=status,readingNote=note,readingUpdatedAt=time.time())
             self.db.execute('INSERT OR REPLACE INTO documents VALUES (?,?)',(row['key'],dumps(row)))
         return {k:v for k,v in row.items() if not k.startswith('_')}
@@ -3168,7 +3169,7 @@ class Handler(BaseHTTPRequestHandler):
             elif route=='/api/guides-generate':
                 return self.reply(200,self.app.generate_guide_routes())
             elif route=='/api/document-state':
-                document=self.app.set_document_state(str(value.get('key','')),value.get('readingStatus','unread'),value.get('readingNote',''))
+                document=self.app.set_document_state(str(value.get('key','')),value.get('readingStatus',_UNSET),value.get('readingNote',_UNSET))
                 return self.reply(200,dict(ok=True,document=document))
             elif route=='/api/figures/context':
                 paper_id=str(value.get('paper_id',''))

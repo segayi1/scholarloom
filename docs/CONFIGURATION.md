@@ -239,3 +239,5 @@ scholarloom/
 │  └─ README.md              # 插件完整说明
 └─ docs/CONFIGURATION.md     # 本文
 ```
+
+自动启动使用 `baseUrl` 的端口。插件关闭或卸载后，已启动的 ScholarLoom 服务继续运行，后台任务会继续；需要停止服务时，请在任务完成后手动停止对应进程。

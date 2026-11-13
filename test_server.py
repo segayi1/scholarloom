@@ -2439,6 +2439,35 @@ class WorkbenchServerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.app.set_document_state("READ1", "invalid", "")
 
+    def test_document_state_api_preserves_omitted_fields_and_validates_supplied_fields(self):
+        self.app.save_document({"key": "READHTTP", "title": "Reading fixture", "readingStatus": "reading",
+                                "readingNote": "Keep this note", "flags": []})
+        _httpd, port = self.start_http()
+        base = f"http://127.0.0.1:{port}"
+
+        def send(payload):
+            request = urllib.request.Request(base + "/api/document-state", data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json", "Origin": base, "X-Workbench-Token": self.app.csrf},
+                method="POST")
+            with urllib.request.urlopen(request, timeout=3) as response:
+                return json.load(response)["document"]
+
+        updated = send({"key": "READHTTP", "readingStatus": "read"})
+        self.assertEqual((updated["readingStatus"], updated["readingNote"]), ("read", "Keep this note"))
+        updated = send({"key": "READHTTP", "readingNote": "Changed note"})
+        self.assertEqual((updated["readingStatus"], updated["readingNote"]), ("read", "Changed note"))
+
+        for invalid in ({"readingStatus": "invalid"}, {"readingNote": "x" * 4001}):
+            request = urllib.request.Request(base + "/api/document-state",
+                data=json.dumps({"key": "READHTTP", **invalid}).encode(),
+                headers={"Content-Type": "application/json", "Origin": base,
+                         "X-Workbench-Token": self.app.csrf}, method="POST")
+            with self.subTest(field=next(iter(invalid))), self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(request, timeout=3)
+            self.assertEqual(caught.exception.code, 400)
+            current = next(row for row in self.app.documents() if row["key"] == "READHTTP")
+            self.assertEqual((current["readingStatus"], current["readingNote"]), ("read", "Changed note"))
+
     def test_legacy_document_added_time_comes_from_import_job(self):
         self.app.save_document({"key": "OLDADD", "title": "Legacy record", "flags": []})
         job = self.add_job(self.input / "legacy.pdf", status="imported")

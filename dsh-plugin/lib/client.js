@@ -1056,6 +1056,8 @@ window.__ModuleLoader__.load({
                     unit.pages.map((pageNumber) => h("button", { key: pageNumber, type: "button", className: "sl-src-jump", onClick: () => onCite(pageNumber) }, `p.${pageNumber}`)),
                   )
                 : null,
+              unit.sourceWarnings?.length ? h(BulletList, { items: unit.sourceWarnings }) : null,
+              unit.missingFigureIds?.length ? h("p", null, `缺少图表来源：${unit.missingFigureIds.join("、")}`) : null,
               unit.question ? h("p", { className: "sl-unit-field" }, h("strong", null, "研究问题 "), unit.question) : null,
               unit.design ? h("p", { className: "sl-unit-field" }, h("strong", null, "设计与对照 "), unit.design) : null,
               unit.result ? h("p", { className: "sl-unit-field" }, h("strong", null, "整理的结果 "), unit.result) : null,
@@ -1162,9 +1164,18 @@ window.__ModuleLoader__.load({
               "div",
               { className: "sl-warning-box" },
               h(Icon, { name: "warning", size: 14 }),
-              h("div", null, record.warnings.slice(0, 3).map((item, index) => h("p", { key: index }, item))),
+              h("div", null, record.warnings.map((item, index) => h("p", { key: index }, item))),
             )
           : null,
+        record.historical ? h("p", { className: "sl-warning-box" }, "历史深读记录；请使用当前版本重新生成。") : null,
+        record.conflictAudit ? h(Section, { title: "数值冲突检查（待核对）", icon: "warning" },
+          h("p", null, `检查状态：${({done: "完成", partial: "范围不完整", error: "失败", skipped: "未检查"})[record.conflictAudit.status] || "待核对"}`),
+          h("p", null, `已检查 ${record.conflictAudit.checkedItems || 0}/${record.conflictAudit.totalItems || 0} 项；失败批次 ${record.conflictAudit.failedBatches || 0}`),
+          (record.conflictAudit.conflicts || []).map((item, i) => h("article", { key: i },
+            h("strong", null, item.quantity),
+            h("p", null, (item.values || []).join(" / ")),
+            h("p", null, item.explanation),
+            (item.evidence || []).map((entry, j) => h("blockquote", { key: j }, `${entry.itemId}: ${entry.quote}`))))) : null,
         overview
           ? h(
               "div",
@@ -1254,7 +1265,7 @@ window.__ModuleLoader__.load({
 
     /* ── chat panel ─────────────────────────────────────────────────── */
 
-    function renderInline(value, evidence, onCite) {
+    function renderInline(value, evidence, onCite, citations = []) {
       const raw = String(value || "");
       const pattern = /(\*\*[^*]+\*\*|\[E\d+\]|\b[Pp]age\s*\d+|第\s*\d+\s*页|\bp\.\s*\d+)/g;
       const parts = raw.split(pattern);
@@ -1266,19 +1277,21 @@ window.__ModuleLoader__.load({
         const evidenceMatch = /^\[(E\d+)\]$/.exec(part);
         if (evidenceMatch) {
           const item = (evidence || []).find((entry) => entry.id === evidenceMatch[1]);
+          const verified = citations.find((entry) => entry.id === evidenceMatch[1]);
           return h(
             "button",
             {
               key: index,
               type: "button",
               className: "sl-cite",
-              title: item && item.quote ? item.quote : `证据 ${evidenceMatch[1]}`,
+              disabled: !verified || verified.state === "unsupported",
+              title: !verified || verified.state === "unsupported" ? "未定位到原文" : verified.state === "page_only" ? "仅定位到页码" : "定位到原文",
               onClick: () => item && item.page && onCite(item.page),
             },
-            item && item.page ? `[${evidenceMatch[1]} · p.${item.page}]` : `[${evidenceMatch[1]}]`,
+            item && item.page ? `[${evidenceMatch[1]} · p.${item.page}${verified?.state === "page_only" ? " · 仅页码" : ""}]` : `[${evidenceMatch[1]}]`,
           );
         }
-        const pageMatch = /\d+/.exec(part);
+        const pageMatch = /^(?:[Pp]age\s*|第\s*|p\.\s*)(\d+)(?:\s*页)?$/.exec(part);
         if (pageMatch) {
           return h(
             "button",
@@ -1286,10 +1299,11 @@ window.__ModuleLoader__.load({
               key: index,
               type: "button",
               className: "sl-cite sl-page-cite",
+              disabled: !citations.some((entry) => entry.page === Number(pageMatch[1]) && entry.state !== "unsupported"),
               title: `跳到 ${part} 对应页`,
-              onClick: () => onCite(Number(pageMatch[0])),
+              onClick: () => onCite(Number(pageMatch[1])),
             },
-            `p.${pageMatch[0]}`,
+            `p.${pageMatch[1]}`,
           );
         }
         return h(React.Fragment, { key: index }, part);
@@ -1311,7 +1325,7 @@ window.__ModuleLoader__.load({
           return h(
             "p",
             { key: index, className: cx(heading && "sl-answer-head", bullet && "sl-answer-item") },
-            renderInline(clean, message.evidence, onCite),
+            renderInline(clean, message.evidence, onCite, message.citations),
           );
         }),
         message.evidence && message.evidence.length
@@ -1334,6 +1348,7 @@ window.__ModuleLoader__.load({
               ),
             )
           : null,
+        message.coverage ? h("p", null, `引用定位：${message.coverage.located || 0}/${message.coverage.citation_count || 0}；未定位：${message.coverage.unsupported || 0}`) : null,
         message.basis ? h("div", { className: "sl-answer-basis" }, message.basis) : null,
       );
     }
@@ -1844,7 +1859,7 @@ window.__ModuleLoader__.load({
           },
         }));
         try {
-          await apiPost("/api/document-state", { key: doc.key, readingStatus: nextStatus, readingNote: doc.readingNote || "" });
+          await apiPost("/api/document-state", { key: doc.key, readingStatus: nextStatus });
         } catch (err) {
           setLibrary((value) => ({
             ...value,
@@ -1857,7 +1872,7 @@ window.__ModuleLoader__.load({
       async function saveNote(note) {
         if (!doc) return;
         try {
-          await apiPost("/api/document-state", { key: doc.key, readingStatus: doc.readingStatus || "unread", readingNote: note });
+          await apiPost("/api/document-state", { key: doc.key, readingNote: note });
           setLibrary((value) => ({ ...value, documents: value.documents.map((item) => (item.key === doc.key ? { ...item, readingNote: note } : item)) }));
           showToast("笔记已保存");
         } catch (err) {
@@ -1885,6 +1900,8 @@ window.__ModuleLoader__.load({
             role: "assistant",
             content: result.answer,
             evidence: result.evidence || [],
+            citations: result.citations || [],
+            coverage: result.coverage || {},
             basis: [result.basis, result.pages ? `索引 ${result.pages} 页` : ""].filter(Boolean).join(" · "),
           };
           setChats((value) => ({ ...value, [key]: [...(value[key] || []), assistant].slice(-30) }));

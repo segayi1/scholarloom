@@ -256,3 +256,7 @@ node test_web.js
 ## License
 
 MIT。见 [LICENSE](LICENSE)。
+
+自动启动使用 `baseUrl` 的端口。插件关闭或卸载后，已启动的 ScholarLoom 服务继续运行，后台任务会继续；需要停止服务时，请在任务完成后手动停止对应进程。
+
+更新本版时，请在任务结束后重启 ScholarLoom 后端，并重新加载更新后的插件，以启用阅读状态和笔记的独立保存。

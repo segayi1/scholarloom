@@ -65,3 +65,45 @@ assert.equal(typeof loaded.apply, "function");
 assert.ok(Array.isArray(loaded.inject));
 
 console.log("dsh-scholarloom checks passed");
+
+// Execute the production converters and renderer with controlled inputs.
+const helpers = host.slice(host.indexOf("  function summarizeFullReadUnits("), host.indexOf("  /* ── agent tools"));
+const textHelper = host.slice(host.indexOf("function text("), host.indexOf("function shortAuthors("));
+const converters = {};
+vm.runInNewContext(textHelper + helpers + ";this.convert = summarizeFullRead", converters);
+const record = converters.convert({historical: true, value: {status: "done", conflictAudit: {status: "partial"},
+  items: [{id: "body", page: 1}, {id: "figure", page: 2}],
+  units: [{sourceItemIds: ["body"], figureItemIds: ["figure", "missing"], sourceWarnings: ["review"]}]}});
+assert.equal(record.historical, true);
+assert.equal(record.conflictAudit.status, "partial");
+assert.equal(record.units[0].sources.length, 2);
+assert.equal(record.units[0].sourceWarnings[0], "review");
+assert.equal(record.units[0].missingFigureIds[0], "missing");
+const renderer = {h: (type, props, ...children) => ({type, props, children}), React: {Fragment: "text"}};
+vm.runInNewContext(client.slice(client.indexOf("    function renderInline("), client.indexOf("    function AnswerText(")) + ";this.render = renderInline", renderer);
+for (const sentence of ["The study enrolled 17 patients.", "剂量为 3 mg/kg，P < 0.05。", "No numerical change."]) {
+  assert.equal(renderer.render(sentence, [], () => {})[0].children[0], sentence);
+}
+assert.equal(renderer.render("[E99]", [], () => {}).filter(Boolean)[0].props.disabled, true);
+assert.equal(renderer.render("p.99", [], () => {}).filter(Boolean)[0].props.disabled, true);
+assert.equal(renderer.render("p.2", [], () => {}, [{page: 2, state: "page_only"}]).filter(Boolean)[0].props.disabled, false);
+assert.equal(renderer.render("[E1]", [{id: "E1", page: 2}], () => {}, [{id: "E1", page: 2, state: "located_quote"}]).filter(Boolean)[0].props.disabled, false);
+console.log("DSH reading regressions passed");
+
+const start = {disposed: false, starting: null, child: null, autoStart: true, projectDir: "project", baseUrl: "http://127.0.0.1:8767", existsSync: () => true, path, process, URL, cache: {}, log: console,
+  ping: async () => Boolean(start.spawned), sleep: async () => {}, resolvePython: () => "python",
+  spawn: (python, args, options) => { start.spawned = {args, options}; return {unref() {}, on() {}}; }};
+vm.runInNewContext(host.slice(host.indexOf("  async function ensureServer("), host.indexOf("  async function loadState(")) + ";this.startServer = ensureServer", start);
+assert.equal(await start.startServer(), true);
+assert.equal(start.spawned.args.join(" "), "server.py --port 8767");
+assert.equal(start.spawned.options.detached, true);
+let cleanup;
+vm.runInNewContext(host.slice(host.lastIndexOf("  ctx.effect("), host.lastIndexOf("}")), {ctx: {effect: (fn) => {cleanup = fn();}}, child: {kill() {throw Error("must preserve background work");}}});
+cleanup();
+const updates = {doc: {key: "paper", readingNote: "stale", readingStatus: "unread"}, setLibrary: () => {}, showToast: () => {}, apiPost: async (route, payload) => {updates.payload = payload;}};
+vm.runInNewContext(client.slice(client.indexOf("      async function updateStatus("), client.indexOf("      function openChat(")) + ";this.status = updateStatus;this.note = saveNote", updates);
+await updates.status("read");
+assert.equal(Object.hasOwn(updates.payload, "readingNote"), false);
+await updates.note("new note");
+assert.equal(Object.hasOwn(updates.payload, "readingStatus"), false);
+console.log("DSH lifecycle and partial-update regressions passed");

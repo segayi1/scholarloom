@@ -111,7 +111,7 @@ export function apply(ctx, config, runtime = {}) {
   const log = runtime.logger || ctx.logger || console;
   const baseUrl = trimBase(config.baseUrl) || "http://127.0.0.1:8766";
   const projectDir = String(config.projectDir || "").trim();
-  const autoStart = config.autoStart !== false;
+  const autoStart = config.autoStart === true;
   const requestTimeoutMs = Number(config.requestTimeoutMs) > 0 ? Number(config.requestTimeoutMs) : 60000;
   const cache = createStore();
   let child = null;
@@ -244,13 +244,16 @@ export function apply(ctx, config, runtime = {}) {
     starting = (async () => {
       if (disposed) return false;
       try {
-        child = spawn(resolvePython(), ["server.py"], {
+        const serverUrl = new URL(baseUrl);
+        const port = serverUrl.port || (serverUrl.protocol === "https:" ? "443" : "80");
+        child = spawn(resolvePython(), ["server.py", "--port", port], {
           cwd: projectDir,
           windowsHide: true,
-          detached: false,
+          detached: true,
           stdio: "ignore",
           env: { ...process.env, PYTHONUTF8: "1", PYTHONIOENCODING: "utf-8" },
         });
+        child.unref();
         child.on("exit", () => {
           child = null;
         });
@@ -738,25 +741,25 @@ export function apply(ctx, config, runtime = {}) {
               }
               const body = await readBody(req);
               const key = String(body.key || "");
-              const readingStatus = String(body.readingStatus || "unread");
-              const readingNote = String(body.readingNote || "");
+              const readingStatus = body.readingStatus;
+              const readingNote = body.readingNote;
               if (!KEY_PATTERN.test(key)) {
                 writeJson(res, 400, { error: "文献标识无效。" });
                 return;
               }
-              if (!["unread", "reading", "read"].includes(readingStatus)) {
+              if (readingStatus !== undefined && !["unread", "reading", "read"].includes(readingStatus)) {
                 writeJson(res, 400, { error: "阅读状态无效。" });
                 return;
               }
-              if (readingNote.length > 4000) {
+              if (readingNote !== undefined && (typeof readingNote !== "string" || readingNote.length > 4000)) {
                 writeJson(res, 400, { error: "阅读笔记请控制在 4000 字以内。" });
                 return;
               }
               const result = await postApi("document-state", { key, readingStatus, readingNote });
               const row = findByKey(key);
               if (row) {
-                row.readingStatus = readingStatus;
-                row.readingNote = readingNote;
+                if (readingStatus !== undefined) row.readingStatus = readingStatus;
+                if (readingNote !== undefined) row.readingNote = readingNote;
                 cache.loadedAt = 0;
               }
               writeJson(res, 200, { ok: true, document: result?.document || null });
@@ -950,8 +953,9 @@ export function apply(ctx, config, runtime = {}) {
       limitations: Array.isArray(unit.limitations) ? unit.limitations.slice(0, 12).map((item) => text(item, 1200)) : [],
       figureNumbers: Array.isArray(unit.figureNumbers) ? unit.figureNumbers.slice(0, 20).map((item) => text(item, 40)) : [],
       figureInterpretation: text(unit.figureInterpretation, 3000),
-      sources: (Array.isArray(unit.sourceItemIds) ? unit.sourceItemIds : [])
-        .slice(0, 10)
+      sourceWarnings: unit.sourceWarnings || [],
+      missingFigureIds: (unit.figureItemIds || []).filter((id) => !itemById.has(id)),
+      sources: [...new Set([...(unit.sourceItemIds || []), ...(unit.figureItemIds || [])])]
         .map((id) => itemById.get(id))
         .filter(Boolean)
         .map((item) => ({
@@ -985,6 +989,8 @@ export function apply(ctx, config, runtime = {}) {
     const value = record.value && typeof record.value === "object" ? record.value : record;
     const overview = value.overview && typeof value.overview === "object" ? value.overview : null;
     return {
+      historical: record.historical === true,
+      conflictAudit: value.conflictAudit || null,
       runId: text(record.runId || value.runId, 40),
       status: text(value.status, 30),
       promptVersion: Number(value.promptVersion) || 0,
@@ -992,7 +998,7 @@ export function apply(ctx, config, runtime = {}) {
       pages: Array.isArray(value.pages) ? value.pages.length : Number(value.coverage?.pages) || 0,
       progress: value.progress && typeof value.progress === "object" ? value.progress : null,
       coverage: value.coverage && typeof value.coverage === "object" ? value.coverage : null,
-      warnings: Array.isArray(value.warnings) ? value.warnings.slice(0, 20).map((item) => { if (typeof item === "string") return text(item, 500); const page = item && (item.page ?? item.pageIndex); const message = item && (item.message || item.text || item.detail); return `${page != null ? `P${page}: ` : ""}${text(message || JSON.stringify(item), 500)}`; }) : [],
+      warnings: Array.isArray(value.warnings) ? value.warnings.map((item) => { if (typeof item === "string") return text(item, 500); const page = item && (item.page ?? item.pageIndex); const message = item && (item.message || item.text || item.detail); return `${page != null ? `P${page}: ` : ""}${text(message || JSON.stringify(item), 500)}`; }) : [],
       overview: overview
         ? {
             oneSentence: text(overview.oneSentence, 2000),
@@ -1101,6 +1107,8 @@ export function apply(ctx, config, runtime = {}) {
             answer: { type: "string", required: true },
             basis: { type: "string" },
             pages: { type: "integer" },
+            citations: { type: "array", items: { type: "object", additionalProperties: true } },
+            coverage: { type: "object", additionalProperties: true },
             evidence: { type: "array", required: true, items: { type: "object", additionalProperties: true } },
           },
         },
@@ -1126,6 +1134,8 @@ export function apply(ctx, config, runtime = {}) {
           { timeoutMs: DEFAULT_ASK_TIMEOUT_MS, signal: exec.signal },
         );
         return {
+          citations: result?.citations || [],
+          coverage: result?.coverage || {},
           answer: text(result?.answer, 20000),
           basis: text(result?.basis, 300),
           pages: Number(result?.pages) || 0,
@@ -1208,6 +1218,9 @@ export function apply(ctx, config, runtime = {}) {
 
   function formatAnswer(value) {
     const lines = [value.answer];
+    for (const citation of value.citations || []) {
+      lines.push(`引用 ${citation.id || citation.page}: ${({located_quote: "定位到原文", page_only: "仅定位到页码", unsupported: "未定位到原文"})[citation.state] || "未核验"}`);
+    }
     if (value.basis) lines.push(`\n依据：${value.basis}${value.pages ? ` · 索引 ${value.pages} 页` : ""}`);
     if (value.evidence?.length) {
       lines.push("\n证据：");
@@ -1221,15 +1234,8 @@ export function apply(ctx, config, runtime = {}) {
   ctx.effect(
     () => () => {
       disposed = true;
-      if (child && !child.killed) {
-        try {
-          child.kill();
-        } catch {
-          /* ignore */
-        }
-      }
       child = null;
     },
-    "dsh-scholarloom: stop managed server",
+    "dsh-scholarloom: dispose plugin",
   );
 }
