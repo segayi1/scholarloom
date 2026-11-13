@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2.1.0 - 2026-11-12
+
+### Added
+
+- Resumable whole-paper reading with page analysis, experiment units, a cross-page overview, source anchors, restart recovery, cancellation, and per-run usage accounting.
+- Project-scoped full-text search with index coverage, stale-version checks, and direct navigation from a matched passage to its page.
+- Editable cross-paper evidence matrices with generated values, human revisions, source-version checks, conflict candidates, and CSV export.
+- Project research drafts, saved revisions, source indexes, and project-scoped synthesis normalization.
+- Named reading sessions with switching, rename, delete, draft recovery, request deduplication, and Markdown or text export.
+- Deterministic overview validation and formulation-conflict detection for whole-paper and synthesis output.
+- Windows desktop launcher with service reuse, restart, in-progress work protection, and the separate `8767` address.
+- Paragraph interpretation, manual figure association, bounded online reading sources, fixed workspace navigation, and adjustable reader columns.
+- An optional offline translation model installer at `install-translation-model.py`.
+
+### Changed
+
+- Raised the application version to 2.1.0 and pinned PyMuPDF 1.27.2.3, CTranslate2 4.8.5, and SentencePiece 0.2.3.
+- Expanded GitHub Actions coverage to the complete Python, Web, translation, and Windows launcher suites.
+- Documented release downloads, one-command setup, optional credentials, Zotero authorization, and third-party license boundaries.
+
+### Fixed
+
+- Page and source references now reject duplicate, invalid, stale, or out-of-range evidence positions instead of silently reusing cached content.
+- Reading-memory deletion, revision, project isolation, and restart recovery now clear source-linked records and keep historical recall bounded.
+- Generated synthesis no longer promotes limited excerpts into whole-paper negatives or unsupported functional-activation claims.
+
 ## 2.0.0 - 2026-11-06
 
 ### Added

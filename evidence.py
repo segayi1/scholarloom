@@ -58,7 +58,7 @@ class EvidenceStore:
                   text TEXT, blocks TEXT, PRIMARY KEY(document, version, page));
             """)
 
-    def index(self, document, path, max_pages=120):
+    def index(self, document, path, max_pages=120, expected_version=None, force=False):
         path = Path(path)
         if not path.is_file():
             raise EvidenceError("未找到本地 PDF 全文文件。")
@@ -71,17 +71,17 @@ class EvidenceStore:
                 "SELECT COUNT(*) FROM evidence_pages WHERE document=? AND version=?",
                 (str(document), row["sha256"] if row else ""),
             ).fetchone()[0] if row else 0
-        if row and row["path"] == str(path) and row["size"] == stat.st_size and row["mtime"] == stat.st_mtime_ns and cached == row["indexed"]:
+        if not force and row and (not expected_version or row["sha256"] == expected_version) and row["path"] == str(path) and row["size"] == stat.st_size and row["mtime"] == stat.st_mtime_ns and cached == row["indexed"] and row["indexed"] >= min(max(0, int(max_pages)), row["page_count"]):
             return self._summary(row)
 
-        version = row["sha256"] if row and row["sha256"] and row["size"] == stat.st_size and row["mtime"] == stat.st_mtime_ns else _sha256(path)
+        version = expected_version or (row["sha256"] if row and row["sha256"] and row["size"] == stat.st_size and row["mtime"] == stat.st_mtime_ns else _sha256(path))
         with self.lock:
             existing = self.db.execute(
                 "SELECT * FROM evidence_versions WHERE document=? AND sha256=?",
                 (str(document), version),
             ).fetchone()
             page_rows = self.db.execute("SELECT COUNT(*) FROM evidence_pages WHERE document=? AND version=?", (str(document), version)).fetchone()[0]
-        if existing and page_rows == existing["indexed"]:
+        if not force and existing and page_rows == existing["indexed"] and existing["indexed"] >= min(max(0, int(max_pages)), existing["page_count"]):
             with self.lock, self.db:
                 self.db.execute(
                     "UPDATE evidence_versions SET path=?,size=?,mtime=?,built=? WHERE document=? AND sha256=?",

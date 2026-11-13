@@ -12,11 +12,24 @@
   <script src="app.js" defer></script>
 </head>
 <body>
+
+  <main class="shell">
+    <div id="load-error" class="notice error" role="alert" hidden></div>
+    <nav class="tabs" aria-label="工作台页面">
+      <button data-view="home" aria-pressed="false"><span>工作台</span></button>
+      <button class="active" data-view="library" aria-pressed="true"><span>检索与导读</span></button>
+      <button data-view="compare" aria-pressed="false"><span>对比阅读 <span id="compare-tab-count"></span></span></button>
+      <button data-view="settings" aria-pressed="false"><span>设置</span></button>
+      <button data-view="reader" aria-pressed="false" id="reader-tab" hidden><span id="reader-tab-title">全文精读</span></button>
+    </nav>
+    <button class="language-toggle" id="language-toggle" type="button" data-no-translate aria-label="Switch to English">EN</button>
+
+    <section id="home-view" hidden>
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-top">
         <p class="eyebrow">LOCAL-FIRST LITERATURE INTELLIGENCE</p>
-        <button class="language-toggle" id="language-toggle" type="button" data-no-translate aria-label="Switch to English">EN</button>
+
       </div>
       <div class="hero-grid">
         <div class="hero-copy">
@@ -31,17 +44,6 @@
       <div id="summary-status" class="summary-status" role="status" aria-live="polite" hidden></div>
     </div>
   </header>
-  <main class="shell">
-    <div id="load-error" class="notice error" role="alert" hidden></div>
-    <nav class="tabs" aria-label="工作台页面">
-      <button data-view="home" aria-pressed="false"><span>工作台</span></button>
-      <button class="active" data-view="library" aria-pressed="true"><span>检索与导读</span></button>
-      <button data-view="compare" aria-pressed="false"><span>对比阅读 <span id="compare-tab-count"></span></span></button>
-      <button data-view="settings" aria-pressed="false"><span>设置</span></button>
-      <button data-view="reader" aria-pressed="false" id="reader-tab" hidden><span id="reader-tab-title">全文精读</span></button>
-    </nav>
-
-    <section id="home-view" hidden>
       <div class="home-dashboard">
         <section class="inbox-panel">
           <div class="section-head"><div><h2>收件箱</h2><p class="section-note">查看新文件识别、导入与摘要进度。</p></div><div class="actions"><button class="btn" id="scan-new">扫描新增文件</button><button class="btn" id="scan-existing">把已有下载文件加入识别</button></div></div>
@@ -62,12 +64,21 @@
         <div class="filters"><select id="category" aria-label="研究主题"><option value="">全部主题</option></select><select id="kind" aria-label="文献类型"><option value="">全部类型</option><option value="journalArticle">期刊文献</option><option value="preprint">预印本</option><option value="patent">专利</option></select><select id="year" aria-label="年份"><option value="">全部年份</option></select><select id="studyType" aria-label="研究形式"><option value="">全部研究形式</option></select><select id="readingStatus" aria-label="阅读状态"><option value="">全部阅读状态</option><option value="unread">未读</option><option value="reading">在读</option><option value="read">已读</option></select></div>
         <p class="hint">支持中英文题名、摘要、作者、关键词和常见主题词。新文献随服务状态更新加入检索。</p><div id="active-route" class="active-route" hidden></div>
       </div>
-      <div class="library-layout"><aside><h2>研究主题</h2><div id="topic-grid" class="topic-list"></div><h2 class="side-title">问题路线</h2><div id="question-grid" class="question-list"></div></aside>
+      <details class="project-search panel">
+        <summary>课题范围与正文检索</summary>
+        <p class="hint">选择课题文献，建立正文索引后搜索段落。索引不完整时，未命中不代表文献中没有相关证据。</p>
+        <div class="actions"><label for="library-project">课题 / Project</label><input id="library-project" value="default" maxlength="120"><button class="btn" id="project-load">读取课题</button></div>
+        <div id="project-members" class="project-members" aria-label="课题文献"></div>
+        <div class="actions"><button class="btn" id="project-save">保存课题文献</button><button class="btn" id="project-index">更新正文索引</button><button class="btn" id="project-rebuild">重建正文索引</button></div>
+        <div class="search-row"><label class="sr" for="project-query">搜索课题正文</label><input id="project-query" type="search" placeholder="输入问题或关键词"><button class="btn primary" id="project-search">搜索正文</button></div>
+        <p id="project-status" class="hint" role="status"></p><div id="project-results"></div>
+      </details>
+      <div class="library-layout"><aside><h2>研究主题</h2><div id="topic-grid" class="topic-list"></div><h2 class="side-title">问题路线</h2><button class="text-button" id="guides-generate" type="button" title="最多选取 80 篇文献，生成会使用模型额度。">生成问题路线</button><span class="guides-status" id="guides-status" role="status">主题随资料自动整理；路线按需生成。</span><div id="question-grid" class="question-list"></div></aside>
         <div class="library-main"><div id="guide-panel" hidden></div><div class="result-head"><div id="result-count" class="count" aria-live="polite"></div><div id="result-hint" class="count">选择文献后可对比或批量生成速读</div></div><div class="summary-batch" id="summary-batch"><div class="summary-batch-copy"><strong>批量生成速读</strong><span id="summary-selection-count">未选择文献</span></div><div class="actions"><button class="text-button" id="summary-select-missing">选择全部待生成</button><button class="text-button" id="summary-clear-selection">清除选择</button><button class="btn primary" id="summary-generate" disabled>生成所选速读</button></div></div><div id="results" class="cards"></div><button id="load-more" class="btn more" hidden>加载更多文献</button></div>
       </div>
     </section>
 
-    <section id="compare-view" hidden><div class="section-head"><div><h2>对比与证据综述</h2><p class="section-note">2–4 篇快速对比；5–12 篇用证据台账生成聚焦小综述。</p></div><button id="clear-compare-top" class="btn">清空选择</button></div><div id="comparison-content"></div></section>
+    <section id="compare-view" hidden><div class="section-head"><div><h2>对比与证据综述</h2><p class="section-note">2–12 篇可生成课题证据矩阵；矩阵按课题保存，可逐格修订并导出 Markdown 或 CSV。</p></div><button id="clear-compare-top" class="btn">清空选择</button></div><div id="comparison-content"></div></section>
 
     <section id="settings-view" hidden><h2>本机连接与摘要</h2><p class="section-note">设置保存在本机。授权与模型密钥仅由你在本机配置。</p>
       <div class="settings-grid">
@@ -104,66 +115,135 @@
       </div>
 
       <div class="reader-layout">
+        <aside class="reader-translate-rail" aria-label="选区与翻译">
+          <div class="reader-rail-head">
+            <div>
+              <strong>选区与翻译</strong>
+              <p>在 PDF 中精确拖选文字，保存摘录或翻译。</p>
+            </div>
+          </div>
+          <div class="qa-selection-box" id="qa-selection-box">
+            <div class="qa-selection-header">
+              <span class="pill">选中文本引用</span>
+              <button class="text-button" id="qa-clear-selection">清除</button>
+            </div>
+            <blockquote id="qa-selection-text">先在原文中拖选文字。</blockquote>
+            <div class="qa-selection-actions">
+              <button class="text-button" id="qa-save-excerpt">保存摘录</button>
+              <button class="text-button" id="qa-translate" type="button">翻译选区</button>
+            </div>
+            <div id="qa-translation" aria-live="polite"><span id="qa-translation-status" role="status" data-translation-status></span><div id="qa-translation-result" data-translation-result></div><button class="text-button" id="qa-translation-copy" type="button" hidden>复制译文</button></div>
+          </div>
+          <p class="reader-rail-hint">拖动时只按字符位置扩展选择；Ctrl+C 可复制当前选区。</p>
+        </aside>
+
+        <div class="reader-splitter" data-reader-split="left" role="separator" tabindex="0" aria-label="调整翻译栏宽度" aria-orientation="vertical"></div>
         <div id="reader-viewport" class="reader-viewport">
           <div id="reader-loading" class="reader-loading">正在加载 PDF 全文…</div>
           <div id="reader-pages-container" class="reader-pages-container"></div>
         </div>
 
+        <div class="reader-splitter" data-reader-split="right" role="separator" tabindex="0" aria-label="调整阅读卡片宽度" aria-orientation="vertical"></div>
         <aside class="reader-sidebar">
           <div class="reader-project-selector">
             <label for="reader-project">课题 / Project</label>
             <input id="reader-project" value="default" maxlength="120">
           </div>
-          <div class="reader-sidebar-tabs">
-            <button class="reader-sidebar-tab active" data-sidebar-tab="assistant">AI 助手</button>
+          <div class="reader-sidebar-tabs" role="tablist" aria-label="阅读工具">
+            <button class="reader-sidebar-tab active" data-sidebar-tab="card">速读</button>
+            <button class="reader-sidebar-tab" data-sidebar-tab="dossier">深读</button>
+            <button class="reader-sidebar-tab" data-sidebar-tab="qa">问答</button>
             <button class="reader-sidebar-tab" data-sidebar-tab="notes">笔记</button>
           </div>
 
-          <div id="reader-sidebar-assistant" class="reader-sidebar-pane">
-            <div id="reader-sidebar-qa">
-            <div class="qa-selection-box" id="qa-selection-box" hidden>
-              <div class="qa-selection-header">
-                <span class="pill">选中文本引用</span>
-                <span>
-                  <button class="text-button" id="qa-save-excerpt">保存摘录</button>
-                  <button class="text-button" id="qa-clear-selection">清除</button>
-                </span>
+          <section id="reader-sidebar-card" class="reader-sidebar-pane">
+            <div class="reader-guide-head">
+              <div>
+                <strong>速读</strong>
+                <p>先判断是否值得继续读，再进入问题、方法和发现。</p>
               </div>
-              <blockquote id="qa-selection-text"></blockquote>
-              <button class="text-button" id="qa-translate" type="button">翻译选区</button>
-              <div id="qa-translation" aria-live="polite"><span id="qa-translation-status" role="status" data-translation-status></span><div id="qa-translation-result" data-translation-result></div><button class="text-button" id="qa-translation-copy" type="button" hidden>复制译文</button></div>
+              <button class="text-button" id="reader-card-generate" type="button">生成速读</button>
             </div>
+            <div id="reader-card-status" class="muted" role="status"></div>
+            <div id="reader-structured-card" class="reader-card-content"></div>
+          </section>
 
-            <section class="reader-guide-block">
-              <div class="reader-guide-head">
-                <div>
-                  <strong>速读</strong>
-                  <p>一句话判断、研究问题、方法与主要发现。</p>
-                </div>
-                <button class="text-button" id="reader-card-generate" type="button">生成速读</button>
+          <section id="reader-sidebar-dossier" class="reader-sidebar-pane dossier-pane" hidden>
+            <div class="full-read-head">
+              <div>
+                <strong>完整深读</strong>
+                <p>AI 通读整页图文，从实验出发合并方法、完整结果和对应图表。</p>
               </div>
-              <div id="reader-card-status" class="muted" role="status"></div>
-              <div id="reader-structured-card" class="reader-card-content"></div>
-            </section>
-
-            <section id="reader-sidebar-dossier" class="reader-guide-block dossier-pane">
-              <div class="reader-guide-head">
-                <div>
-                  <strong>深入理解</strong>
-                  <p>按原文页码梳理大纲、论证链、方法审查与可复用笔记。</p>
-                </div>
-                <button class="btn primary" id="dossier-generate">生成深读档案</button>
+              <div class="full-read-actions">
+                <button class="btn primary" id="full-read-start">生成完整深读</button>
+                <button class="btn" id="full-read-resume" hidden>继续未完成页面</button>
+                <button class="btn" id="full-read-cancel" hidden>取消深读</button>
               </div>
-              <span id="dossier-status" class="muted" role="status"></span>
-              <details class="reader-guide-focus">
-                <summary>聚焦问题（可选）</summary>
-                <input id="dossier-focus" maxlength="500" placeholder="例如：这篇文章如何排除替代解释？">
-              </details>
-              <div id="dossier-content"></div>
-            </section>
+            </div>
+            <p class="muted"><span id="full-read-page-count"></span> 逐页分析会将 PDF 页面图像发送给所配置的模型服务，可能产生模型用量与费用。取消将在当前请求结束后生效，该请求仍可能计费。</p>
+            <span id="full-read-status" class="muted" role="status"></span>
+            <div id="full-read-content"></div>
+            <details class="legacy-deep-read">
+              <summary>旧版逐段工具与档案</summary>
+            <div class="reader-guide-head">
+              <div>
+                <strong>逐段深读</strong>
+                <p>按原文顺序阅读，按需解读文字与相关图像。</p>
+              </div>
+              <button class="btn primary" id="dossier-generate">生成深读档案</button>
+            </div>
+            <span id="dossier-status" class="muted" role="status"></span>
+            <details class="reader-guide-focus">
+              <summary>聚焦问题（可选）</summary>
+              <input id="dossier-focus" maxlength="500" placeholder="例如：这篇文章如何排除替代解释？">
+            </details>
+            <div id="deep-status" class="muted" role="status"></div>
+            <div id="deep-reader" hidden>
+              <div class="actions"><button class="btn" id="deep-prev">上一段</button><span id="deep-position"></span><button class="btn" id="deep-next">下一段</button></div>
+              <button class="text-button" id="deep-source">查看原文</button>
+              <blockquote id="deep-text"></blockquote>
+              <div id="deep-figures"></div>
+              <label><input type="checkbox" id="deep-send-image"> 将所选图像发送给支持视觉的模型</label>
+              <button class="btn primary" id="deep-analyze">解读这一段</button>
+              <div id="deep-answer" aria-live="polite"></div>
+            </div>
+            <details><summary>已有深读档案</summary><div id="dossier-content"></div></details>
+            </details>
+            <details id="deep-figure-tools"><summary>图像选区与笔记</summary><div id="reader-sidebar-figure" class="figure-pane">
+            <p class="muted">框选图或子图，固定在侧栏中对照原文。课题沿用 AI 问答中的课题设置。</p>
+            <button class="btn primary" id="figure-select" aria-pressed="false">框选图像</button>
+            <p id="figure-status" class="muted" role="status">点击框选后，在 PDF 页面拖动选择区域。</p>
+            <div id="figure-current" hidden>
+              <img id="figure-preview" alt="选中的 PDF 图像区域">
+              <button class="text-button" id="figure-source">返回图像原页</button>
+              <label for="figure-number">图号（例如 2 或 S3）</label>
+              <input id="figure-number" maxlength="40">
+              <button class="btn" id="figure-find">查找图注和正文</button>
+              <div id="figure-context"></div>
+              <label for="figure-note">图像笔记</label>
+              <textarea id="figure-note" rows="4" maxlength="4000" placeholder="实验问题、对照、观察和待确认的问题"></textarea>
+              <button class="btn primary" id="figure-save">保存到当前课题</button>
+            </div>
+            <h3>已保存的图像笔记</h3>
+            <div id="figure-list"></div>
+                        </div></details>
+          </section>
 
+          <div id="reader-sidebar-qa" class="reader-sidebar-pane" hidden>
             <div class="qa-input-section">
-              <label for="reader-ask-input">继续追问本文</label>
+              <div class="reading-session-controls">
+                <label for="reading-session-select">会话 / Session</label>
+                <select id="reading-session-select"><option value="default">默认历史 / Legacy history</option></select>
+                <input id="reading-session-title" maxlength="200" placeholder="会话名称 / Session name" aria-label="会话名称 / Session name">
+                <div class="actions">
+                  <button class="text-button" id="reading-session-create">新建</button>
+                  <button class="text-button" id="reading-session-rename" disabled>重命名</button>
+                  <button class="text-button" id="reading-session-delete" disabled>删除</button>
+                  <button class="text-button" data-session-export="markdown">导出 Markdown</button>
+                  <button class="text-button" data-session-export="text">导出 TXT</button>
+                </div>
+              </div>
+              <label for="reader-ask-input">文章与背景问答</label><label><input type="checkbox" id="reader-online-search"> 联网检索相关文献（问题将发送至文献检索服务）</label>
               <textarea id="reader-ask-input" rows="3" placeholder="输入你想了解的问题，例如：本文的实验对象和对照是什么？核心机理是什么？"></textarea>
               <div class="qa-actions">
                 <button class="btn primary" id="reader-ask-btn">提问</button>
@@ -189,25 +269,7 @@
             <div id="reader-qa-history" class="reader-qa-history"></div>
           </div>
 
-          <div id="reader-sidebar-figure" class="reader-sidebar-pane figure-pane" hidden>
-            <button class="text-button" id="reader-back-assistant">← 返回 AI 助手</button>
-            <p class="muted">框选图或子图，固定在侧栏中对照原文。课题沿用 AI 问答中的课题设置。</p>
-            <button class="btn primary" id="figure-select" aria-pressed="false">框选图像</button>
-            <p id="figure-status" class="muted" role="status">点击框选后，在 PDF 页面拖动选择区域。</p>
-            <div id="figure-current" hidden>
-              <img id="figure-preview" alt="选中的 PDF 图像区域">
-              <button class="text-button" id="figure-source">返回图像原页</button>
-              <label for="figure-number">图号（例如 2 或 S3）</label>
-              <input id="figure-number" maxlength="40">
-              <button class="btn" id="figure-find">查找图注和正文</button>
-              <div id="figure-context"></div>
-              <label for="figure-note">图像笔记</label>
-              <textarea id="figure-note" rows="4" maxlength="4000" placeholder="实验问题、对照、观察和待确认的问题"></textarea>
-              <button class="btn primary" id="figure-save">保存到当前课题</button>
-            </div>
-            <h3>已保存的图像笔记</h3>
-            <div id="figure-list"></div>
-          </div>
+
 
           <div id="reader-sidebar-notes" class="reader-sidebar-pane" hidden>
             <div class="reader-notes-section">

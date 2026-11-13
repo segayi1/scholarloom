@@ -5,17 +5,23 @@ import re
 import time
 
 
+_TERM_ALIASES = tuple((re.compile(pattern), concept) for pattern, concept in (
+    (r'偏好|希望|prefer\w*', ' preference '),
+    (r'假设|hypothes\w*', ' hypothesis '),
+    (r'课题|主题|topic', ' topic '),
+    (r'笔记|notes?', ' note '),
+    (r'局限|limitations?', ' limitation '),
+))
+_TERM_STOP = frozenset('a an the i my me we our you your what which how do did does is are was were to for of in on it this that with and or use now current currently'.split())
+_TERM_WORD = re.compile(r"[a-z0-9]+|[\u4e00-\u9fff]")
+
+
 def terms(text):
     text = text.lower()
     # Shared bilingual memory concepts, without a model call or domain vocabulary.
-    for pattern, concept in ((r'偏好|希望|prefer\w*',' preference '),
-                             (r'假设|hypothes\w*',' hypothesis '),
-                             (r'课题|主题|topic',' topic '),
-                             (r'笔记|notes?',' note '),
-                             (r'局限|limitations?',' limitation ')):
-        text = re.sub(pattern, concept, text)
-    stop = set('a an the i my me we our you your what which how do did does is are was were to for of in on it this that with and or use now current currently'.split())
-    return [w for w in re.findall(r"[a-z0-9]+|[\u4e00-\u9fff]", text) if w not in stop]
+    for pattern, concept in _TERM_ALIASES:
+        text = pattern.sub(concept, text)
+    return [word for word in _TERM_WORD.findall(text) if word not in _TERM_STOP]
 
 
 def scope(value):

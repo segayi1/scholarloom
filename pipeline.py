@@ -23,7 +23,7 @@ try:
 except ImportError:  # pragma: no cover - deployment environment supplies PyMuPDF
     fitz = None
 
-USER_AGENT = "ScholarLoom/2.0.0"
+USER_AGENT = "ScholarLoom/2.1.0"
 OPENALEX_USER_AGENT = f"{USER_AGENT} (mailto:scholarloom@openalex-client.org)"
 
 

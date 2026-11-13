@@ -1,3 +1,5 @@
+import hashlib
+import os
 import sqlite3
 import tempfile
 import threading
@@ -48,6 +50,43 @@ class EvidenceStoreTests(unittest.TestCase):
         self.assertTrue(result["evidence"])
         self.assertEqual(result["evidence"][0]["page"], 1)
         self.assertIn("zephyr", result["evidence"][0]["text"])
+
+    def test_cached_partial_index_expands_and_is_not_shrunk(self):
+        long_pdf = Path(self.temp.name) / "long.pdf"
+        document = fitz.open()
+        for page_number in range(1, 122):
+            page = document.new_page()
+            page.insert_text((72, 90), "Late page zephyr finding" if page_number == 121 else f"Page {page_number}")
+        document.save(long_pdf)
+        document.close()
+
+        partial = self.store.index("LONG", long_pdf)
+        cached_partial = self.store.index("LONG", long_pdf)
+        self.assertEqual(partial["indexed"], 120)
+        self.assertTrue(cached_partial["cached"])
+        full = self.store.index("LONG", long_pdf, max_pages=121)
+        self.assertEqual(full["indexed"], 121)
+        self.assertEqual([p["page"] for p in self.store.pages(full)][-1], 121)
+        result = self.store.retrieve(full, "late page zephyr finding")
+        self.assertTrue(any(item["page"] == 121 and "zephyr" in item["text"]
+                            for item in result["evidence"]))
+        again = self.store.index("LONG", long_pdf)
+        self.assertEqual(again["indexed"], 121)
+        self.assertTrue(again["cached"])
+
+    def test_expected_version_invalidates_same_size_and_timestamp_cache(self):
+        with self.pdf.open('ab') as handle:
+            handle.write(b'\n% A')
+        first = self.store.index('VERSION', self.pdf)
+        stat = self.pdf.stat()
+        content = self.pdf.read_bytes()
+        self.pdf.write_bytes(content[:-1] + b'B')
+        os.utime(self.pdf, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+        version = hashlib.sha256(self.pdf.read_bytes()).hexdigest()
+        second = self.store.index('VERSION', self.pdf, expected_version=version)
+        self.assertNotEqual(first['version'], second['version'])
+        self.assertEqual(second['version'], version)
+        self.assertFalse(second['cached'])
 
     def test_selection_and_quote_validation_never_promote_mismatches(self):
         index = self.store.index("DOC2", self.pdf)

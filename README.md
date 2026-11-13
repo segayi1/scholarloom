@@ -58,14 +58,47 @@ Save excerpts, project context, preferences, and completed Q&A. Project and pape
 
 Run the workbench on `127.0.0.1`, keep the library in SQLite and local files, and connect Zotero only when you want bibliographic organization. Use any OpenAI-compatible Chat Completions endpoint for AI features, or keep the intake and reading workspace running without one.
 
-## New in 2.0
+## New in 2.1
 
-- **Parallel paper tabs.** Independent page and zoom state, restored after reload.
-- **Page-grounded dossiers.** Reading decision, outline, argument roles, methods audit, and evidence-linked notes on demand.
-- **Personal research memory.** Project isolation, bounded recall, revisions, deletion, and Markdown or JSON export.
-- **Figure reading.** High-resolution local crops, caption and in-text reference candidates, project notes, and stale-version warnings.
-- **Low-friction translation.** Browser-local translation, an online fallback, or an optional offline model with quality and size shown before installation.
-- **Recoverable workflows.** Failed reading-card batches can be retried per paper, and health checks support an online-consistent library backup.
+- **Whole-paper deep reading.** Analyze every page, group experiments into units, generate a cross-page overview, follow source anchors, resume interrupted runs, and stop a running job.
+- **Project retrieval and evidence matrices.** Search all project PDFs, compare 2–12 papers in an editable matrix, save human revisions separately from generated values, and inspect source-version conflicts.
+- **Project research drafts.** Build a focused synthesis from bounded full-text passages, save revisions, and keep source IDs and locatable excerpts.
+- **Named reading sessions.** Keep separate lines of inquiry inside one paper, restore drafts and selections, export a session, and avoid duplicate replies after retries.
+- **Reader and desktop workflow.** Work with parallel tabs, fixed navigation and scrolling, adjustable reader columns, paragraph interpretation, manual figure links, and a Windows launcher with in-progress work protection.
+- **Stronger evidence boundaries.** Validate overviews, surface formulation conflicts, reject stale evidence positions, and label model interpretations separately from paper evidence.
+
+## Download and automatic setup
+
+Every release contains the same source tree: no build step, package manager, or cloud account is required for local intake and reading.
+
+### Windows PowerShell
+
+```powershell
+$zip = "$env:TEMP\ScholarLoom-2.1.0.zip"
+$dst = Join-Path $env:LOCALAPPDATA "ScholarLoom"
+Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.zip" -OutFile $zip
+Expand-Archive $zip $dst -Force
+Set-Location (Join-Path $dst "ScholarLoom-2.1.0")
+.\setup.ps1
+```
+
+Then double-click `launch.vbs`.
+
+### macOS and Linux
+
+```sh
+curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.tar.gz -o /tmp/ScholarLoom-2.1.0.tar.gz
+tar -xzf /tmp/ScholarLoom-2.1.0.tar.gz
+cd ScholarLoom-2.1.0
+./setup.sh
+./start.sh
+```
+
+`setup.cmd`, `setup.ps1`, and `setup.sh` create `.venv`, install the pinned dependencies, and verify the runtime imports. The optional offline translation model can be downloaded separately:
+
+```sh
+python install-translation-model.py
+```
 
 ## Quick start
 
@@ -73,13 +106,13 @@ Run the workbench on `127.0.0.1`, keep the library in SQLite and local files, an
 
 1. [Download the latest release](https://github.com/segayi1/scholarloom/releases/latest) and extract it outside a protected system folder.
 2. Double-click `setup.cmd` once to create `.venv` and install dependencies.
-3. Double-click `launch.vbs` and open `http://127.0.0.1:8766`.
+3. Double-click `launch.vbs` and open `http://127.0.0.1:8766`, or use `launch-desktop.ps1` for `http://127.0.0.1:8767`.
 
 ### macOS and Linux
 
 ```sh
-git clone https://github.com/segayi1/scholarloom.git
-cd scholarloom
+tar -xzf ScholarLoom-2.1.0.tar.gz
+cd ScholarLoom-2.1.0
 chmod +x setup.sh start.sh
 ./setup.sh
 ./start.sh
@@ -87,11 +120,15 @@ chmod +x setup.sh start.sh
 
 Open `http://127.0.0.1:8766`.
 
-### Connect what you need
+### Authorizations and optional services
 
-- Add a download folder and use the header switch to pause or resume monitoring.
-- Connect Zotero if you want collections, tags, and linked attachments managed there.
-- Add an OpenAI-compatible endpoint, model name, and API key for reading cards, Q&A, dossiers, and synthesis.
+- **Local workspace:** no account or API key is required for intake, the PDF reader, project organization, or local search.
+- **AI model:** open Settings, enter an OpenAI-compatible endpoint, model name, and API key, then use **Test model**. On Windows the key is encrypted with the current user's DPAPI context; it is never sent to the browser or written into reading records. A loopback endpoint can omit the key.
+- **Zotero:** click the Zotero connection button and choose **Always Allow** once. This is the interface for optional collection, tag, and linked-attachment writes; the grant can be revoked in Zotero.
+- **Translation:** browser-local translation needs a browser language-pack permission on first use. The online fallback sends only the selected passage to `translate.googleapis.com`. The optional offline model is installed by the command above or by the button in Settings.
+- **Downloads:** the core setup scripts require network access only while installing Python packages. The offline translation model is a separate download and is not included in the release archive.
+
+Generated summaries and syntheses remain model interpretations: a locatable citation confirms the source page, while claim-level scientific review remains required.
 
 ## Built with
 
@@ -116,4 +153,7 @@ The server binds to localhost, and the browser UI ships with the project. Develo
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+ScholarLoom's original source code is available under the [MIT License](LICENSE).
+Third-party components keep their own licenses; in particular, PyMuPDF is
+AGPL-3.0 or commercially licensed. See
+[Third-Party Notices](THIRD_PARTY_NOTICES.md) before redistribution.

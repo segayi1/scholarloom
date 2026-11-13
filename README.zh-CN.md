@@ -58,14 +58,47 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 
 工作台运行在 `127.0.0.1`，资料库使用 SQLite 和本地文件，需要文献整理时再连接 Zotero。AI 功能支持任意 OpenAI Chat Completions 兼容接口，也可以先只使用自动收文和阅读工作台。
 
-## 2.0 亮点
+## 2.1 亮点
 
-- **多篇论文并行阅读。** 每篇独立保存页码和缩放，刷新后恢复阅读现场。
-- **逐页深度阅读报告。** 按需生成阅读决策、论文大纲、论证角色、方法审计和带证据的笔记。
-- **项目隔离的阅读记忆。** 支持修改、删除、上下文上限，以及 Markdown 或 JSON 导出。
-- **把 Figure 和正文一起读。** 本地高清裁剪、图注与正文提及候选、项目笔记，以及 PDF 变化后的过期提示。
-- **低门槛翻译。** 支持浏览器本地、在线后备或可选离线模型；安装前展示体积、质量和使用边界。
-- **失败可恢复。** 批量速读失败后可以逐篇重试，资料库检查支持在线一致的备份。
+- **整篇深读。** 逐页分析、实验分组、跨页概述、来源定位、断点续跑和任务取消。
+- **项目检索与证据矩阵。** 检索课题内全部 PDF，在可编辑矩阵中比较 2–12 篇文献，分离人工修订与生成值，并检查来源版本冲突。
+- **课题调研初稿。** 基于有限全文段落生成聚焦综述，保存修订、来源编号与可定位引文。
+- **命名阅读会话。** 在同一篇论文内保留多条研究线索，恢复草稿与选区，导出会话，并避免重试产生重复回答。
+- **阅读与桌面工作流。** 并行标签页、固定导航与滚动、可调阅读栏、段落解读、手动图表关联，以及带进行中任务保护的 Windows 启动器。
+- **更明确的证据边界。** 校验概述、提示配方冲突、拒绝过期证据位置，并区分模型解释与论文证据。
+
+## 下载与自动安装
+
+发布包就是完整源码，不需要构建步骤、包管理器或云端账户即可使用本地收文和阅读功能。
+
+### Windows PowerShell
+
+```powershell
+$zip = "$env:TEMP\ScholarLoom-2.1.0.zip"
+$dst = Join-Path $env:LOCALAPPDATA "ScholarLoom"
+Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.zip" -OutFile $zip
+Expand-Archive $zip $dst -Force
+Set-Location (Join-Path $dst "ScholarLoom-2.1.0")
+.\setup.ps1
+```
+
+安装后双击 `launch.vbs` 启动。
+
+### macOS 和 Linux
+
+```sh
+curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.0.tar.gz -o /tmp/ScholarLoom-2.1.0.tar.gz
+tar -xzf /tmp/ScholarLoom-2.1.0.tar.gz
+cd ScholarLoom-2.1.0
+./setup.sh
+./start.sh
+```
+
+`setup.cmd`、`setup.ps1` 和 `setup.sh` 会创建 `.venv`、安装固定版本依赖并验证运行时导入。可选离线翻译模型可单独下载：
+
+```sh
+python install-translation-model.py
+```
 
 ## 快速开始
 
@@ -73,13 +106,13 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 
 1. 打开 [最新版本](https://github.com/segayi1/scholarloom/releases/latest)，下载并解压到非系统保护目录。
 2. 首次使用时双击 `setup.cmd`，脚本会创建 `.venv` 并安装依赖。
-3. 双击 `launch.vbs`，打开 `http://127.0.0.1:8766`。
+3. 双击 `launch.vbs` 打开 `http://127.0.0.1:8766`，或使用 `launch-desktop.ps1` 打开 `http://127.0.0.1:8767`。
 
 ### macOS 和 Linux
 
 ```sh
-git clone https://github.com/segayi1/scholarloom.git
-cd scholarloom
+tar -xzf ScholarLoom-2.1.0.tar.gz
+cd ScholarLoom-2.1.0
 chmod +x setup.sh start.sh
 ./setup.sh
 ./start.sh
@@ -87,11 +120,15 @@ chmod +x setup.sh start.sh
 
 打开 `http://127.0.0.1:8766`。
 
-### 按需连接
+### 授权与可选服务
 
-- 添加一个下载文件夹，用页面顶部的开关暂停或恢复监听。
-- 需要在 Zotero 中管理分类、标签和附件链接时，再连接 Zotero。
-- 需要速读、问答、深度报告和跨篇综合时，添加 OpenAI 兼容接口、模型名和 API Key。
+- **本地工作区：** 收文、PDF 阅读、课题整理和本地检索不需要账户或 API Key。
+- **AI 模型：** 在设置中填写 OpenAI 兼容接口、模型名和 API Key，再点击“测试模型”。Windows 使用当前用户的 DPAPI 加密保存密钥；密钥不会发送到浏览器，也不会写入阅读记录。本机回环接口可以省略密钥。
+- **Zotero：** 点击 Zotero 连接按钮，并在 Zotero 弹窗中一次性选择“始终允许”。这是可选的分类、标签和附件关联写入接口，权限可随时在 Zotero 撤销。
+- **翻译：** 浏览器本地翻译首次使用需要浏览器语言包权限；在线后备只把所选文本发送到 `translate.googleapis.com`。可选离线模型使用上方命令或在设置中点击下载。
+- **下载：** 核心安装脚本只在安装 Python 包时需要网络；离线翻译模型单独下载，不包含在发布包内。
+
+生成的摘要和综述仍是模型解读：引用可定位只证明来源页码存在，具体论断仍需逐项核对原文。
 
 ## 技术栈
 
@@ -116,4 +153,6 @@ Python 3.12 · SQLite · PDF.js · Crossref · arXiv · OpenAlex · 可选 Zoter
 
 ## 许可证
 
-MIT，详见 [LICENSE](LICENSE)。
+ScholarLoom 原创源代码采用 [MIT 许可证](LICENSE)。第三方组件保留各自的许可证；
+其中 PyMuPDF 采用 AGPL-3.0 或商业许可证。再分发前请阅读
+[第三方说明](THIRD_PARTY_NOTICES.md)。
