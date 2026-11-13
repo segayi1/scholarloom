@@ -14,6 +14,7 @@
     <img src="https://img.shields.io/badge/local--first-yes-d7b76d" alt="本地优先">
     <img src="https://img.shields.io/badge/Python-3.12%2B-174c42" alt="Python 3.12+">
     <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux-supported-d7b76d" alt="支持 Windows、macOS 和 Linux">
+    <img src="https://img.shields.io/badge/DeepSeek%20Harness-plugin-c9705b" alt="DeepSeek Harness 插件">
     <a href="LICENSE"><img src="https://img.shields.io/github/license/segayi1/scholarloom?color=c9705b" alt="MIT 许可证"></a>
   </p>
 
@@ -22,7 +23,14 @@
     ·
     <a href="#快速开始">快速开始</a>
     ·
+    <a href="#两个入口同一份文库">DSH 插件</a>
+    ·
     <a href="#进一步了解">文档</a>
+  </p>
+
+  <p>
+    <strong>新增 · DeepSeek Harness 插件：</strong>同一份文库的另一个入口。
+    <a href="#两个入口同一份文库">查看面板 →</a>
   </p>
 
   <p><a href="README.md">English</a> · <strong>简体中文</strong></p>
@@ -53,10 +61,36 @@
 
 <p align="center"><strong>先从一篇论文开始，保留证据，让课题自然积累。</strong></p>
 
-### 按你的目标开始
+## 两个入口，同一份文库
+
+同一个本地文库，可以在浏览器里打开，也可以在 DeepSeek Harness 里打开。两者都不是副本：读的是同一份 `data/`；DSH 插件只是一个入口——不建第二份数据库，不单独存模型配置，也不新增远端服务。
+
+<table>
+  <tr>
+    <td width="50%"><strong>浏览器工作台</strong><br><code>server.py</code> + <code>web/</code>，打开 <code>127.0.0.1:8766</code>。收文、设置、Zotero、综述和完整管理都在这里。</td>
+    <td width="50%"><strong>DeepSeek Harness 面板</strong><br>可选的 <a href="dsh-plugin/"><code>dsh-plugin/</code></a> 把文库检索、阅读卡、连续 PDF、带页码问答、笔记、记忆和四个 Agent 工具放进 DSH 左侧栏。</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/assets/dsh-workbench-side-by-side.png" alt="ScholarLoom 在 DeepSeek Harness 中：解读面板、带页码问答与 PDF 同屏" width="64%">
+</p>
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\dsh-plugin\install.ps1 -Profile desktop
+```
+
+两者可以同时运行。配置分别管理：本地版负责端口、模型/Zotero 设置和 `data/`；插件配置 `baseUrl`、`projectDir`、`pythonPath`、`autoStart`、`requestTimeoutMs`。完整对照见 [配置说明](docs/CONFIGURATION.md)。
+
+Agent 工具：`scholarloom_search`、`scholarloom_paper`、`scholarloom_ask`、`scholarloom_status`。
+
+[插件 README](dsh-plugin/README.md) · [安装、配置与安全边界](docs/DSH_PLUGIN.md)
+
+## 按你的目标开始
 
 | 你想要…… | 从这里开始 |
 | :--- | :--- |
+| 在 DeepSeek Harness 里使用 | [DSH 插件](#两个入口同一份文库) · [安装](docs/DSH_PLUGIN.md) |
 | 清理堆满 PDF 的下载文件夹 | [快速开始](#快速开始) · [使用指南](docs/USAGE.md) |
 | 提问后能回到原文 | [阅读与问答](docs/USAGE.md#evidence-grounded-reading) |
 | 比较多篇论文 | [项目检索与综述](docs/USAGE.md#comparison-synthesis) |
@@ -99,20 +133,6 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 - **命名阅读会话。** 在同一篇论文内保留多条研究线索，恢复草稿与选区，导出会话，并避免重试产生重复回答。
 - **阅读与桌面工作流。** 并行标签页、固定导航与滚动、可调阅读栏、段落解读、手动图表关联，以及带进行中任务保护的 Windows 启动器。
 - **更明确的证据边界。** 校验概述、提示配方冲突、拒绝过期证据位置，并区分模型解释与论文证据。
-
-## DeepSeek Harness 文献工作台
-
-可选的 [`dsh-plugin/`](dsh-plugin/) 把同一个本地文库接成 DSH 原生面板：文库检索、阅读卡、窗口内 PDF 阅读、带页码证据的问答、阅读记忆、阅读笔记和 Agent 工具（`scholarloom_search`、`scholarloom_paper`、`scholarloom_ask`、`scholarloom_status`）。ScholarLoom 仍是唯一数据源；插件不建立第二份数据库，也不新增远端请求。插件 README 见 [dsh-plugin/README.md](dsh-plugin/README.md)，安装、配置与安全边界见 [docs/DSH_PLUGIN.md](docs/DSH_PLUGIN.md)。
-
-## 两种运行方式，分别配置
-
-ScholarLoom 可以：
-
-1. **本地版**：运行 `server.py` + `web/`，浏览器打开 `http://127.0.0.1:8766`；
-2. **DSH 插件版**：从 DSH 左侧「文献工作台」进入，连接本地服务；
-3. **同时使用**：推荐方式；插件读取同一份 `data/`，不会建立第二份数据库。
-
-两种形态分别配置：本地版管理端口、模型/Zotero 设置和 `data/`；插件配置 `baseUrl`、`projectDir`、`pythonPath`、`autoStart`、`requestTimeoutMs`。完整对照、Windows 命令和排查见 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)。
 
 ## 下载与自动安装
 
@@ -195,13 +215,14 @@ Python 3.12 · SQLite · PDF.js · Crossref · arXiv · OpenAlex · 可选 Zoter
 
 | 从这里开始 | 深入了解 |
 | :--- | :--- |
+| [DSH 插件](dsh-plugin/README.md) | DSH 原生面板、Agent 工具、安装与配置 |
 | [使用指南](docs/USAGE.md) | 收文、阅读、问答、记忆、Figure、综述和发现 |
 | [项目记忆](docs/PROJECT_MEMORY.md) | 产品方向、架构和已知缺口 |
 | [数据格式](docs/DATA_FORMAT.md) | 存储结构、设置和私有字段 |
 | [参与贡献](CONTRIBUTING.md) | 开发环境与贡献流程 |
 | [安全策略](SECURITY.md) | 漏洞报告与信任边界 |
 | [更新日志](CHANGELOG.md) | 各版本的功能与修复 |
-| [小红书文案](docs/promotion/xiaohongshu.md) | 可直接改写发布的推广帖子与配图建议 |
+| [小红书文案](docs/promotion/dsh-workbench/copy.md) | 7 张 3:4 配图与可直接改写的帖子 |
 
 ## 贡献者
 

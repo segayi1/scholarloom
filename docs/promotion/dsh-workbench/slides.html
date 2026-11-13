@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>ScholarLoom × DeepSeek Harness — 小红书配图</title>
+<style>
+  :root{
+    --paper:#f5f0e6; --paper-2:#ece5d7; --card:#fbf8f1; --white:#fffdf7;
+    --ink:#16221e; --green:#1e4a3c; --green-2:#2e6553; --accent:#c56a45;
+    --gold:#d9a84e; --gold-2:#eedaa9; --sage:#dde7de; --muted:#70766a;
+    --line:#ccc5b8; --line-strong:#a9a091;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--paper)}
+  body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;color:var(--ink)}
+  .slide{
+    display:none;width:1080px;height:1440px;position:relative;overflow:hidden;
+    padding:82px 88px 78px;background-color:var(--paper);
+    background-image:radial-gradient(rgba(112,96,72,.055) 1px, transparent 1px);
+    background-size:7px 7px;flex-direction:column;
+  }
+  .slide.active{display:flex}
+  .slide::after{
+    content:"";position:absolute;inset:42px;border:1.4px solid rgba(22,34,30,.28);
+    border-radius:22px;pointer-events:none;
+  }
+  .top{
+    display:flex;justify-content:space-between;align-items:center;flex:none;
+    font-family:Consolas,"Courier New",monospace;font-size:17px;letter-spacing:.22em;
+    color:var(--muted);text-transform:uppercase;
+  }
+  .top .brand{display:flex;align-items:center;gap:10px}
+  .top svg{width:20px;height:20px;stroke:var(--green);fill:none;stroke-width:1.5}
+  .rule{height:1px;background:var(--line);margin:16px 0 0;flex:none}
+  h1{
+    margin:42px 0 0;font-size:112px;line-height:1.03;letter-spacing:-.045em;
+    font-weight:700;color:var(--ink);flex:none;
+  }
+  h1 .green{color:var(--green)}
+  h1 .accent{color:var(--accent)}
+  h1.small{font-size:96px}
+  .lede{
+    margin:22px 0 0;font-size:26px;line-height:1.65;color:var(--muted);
+    max-width:860px;flex:none;
+  }
+  .kicker{
+    display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;
+    border:1px solid rgba(30,74,60,.28);background:rgba(221,231,222,.72);
+    color:var(--green);font-size:17px;letter-spacing:.08em;margin-top:24px;
+    align-self:flex-start;flex:none;
+  }
+  .kicker i{display:block;width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .foot{
+    position:absolute;left:88px;right:88px;bottom:48px;display:flex;justify-content:space-between;
+    align-items:center;color:var(--muted);font-size:16px;letter-spacing:.03em;
+  }
+  .foot .page{font-family:Consolas,monospace;letter-spacing:.08em}
+  .foot::before{content:"";position:absolute;left:0;right:0;top:-16px;height:1px;background:var(--line)}
+  .mono{font-family:Consolas,"Courier New",monospace}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;
+    background:var(--sage);color:var(--green);font-size:16px;line-height:1.2;white-space:nowrap;
+  }
+  .pill.gold{background:var(--gold-2);color:#6f4e13}
+  .pill.accent{background:#f6e0d6;color:#8f3f21}
+  .panel{
+    background:var(--card);border:1.5px solid var(--line);border-radius:22px;
+    box-shadow:0 14px 30px rgba(30,74,60,.07);
+  }
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 20px 0}
+  .panel-head b{font-size:20px}
+  .muted{color:var(--muted)}
+  .tiny{font-size:14px;color:var(--muted);line-height:1.5}
+  .lines{display:flex;flex-direction:column;gap:10px}
+  .lines i{display:block;height:9px;border-radius:6px;background:#ddd8cc}
+  .lines i.w90{width:90%}.lines i.w80{width:80%}.lines i.w70{width:70%}.lines i.w60{width:60%}.lines i.w50{width:50%}
+  .quote-text{font-family:"SimSun","Songti SC",serif;font-size:27px;line-height:1.7;margin:8px 0 14px}
+  .field{margin-top:12px}
+  .field b{display:block;font-size:15px;color:var(--green);letter-spacing:.08em;margin-bottom:7px}
+  .field .bar{height:10px;border-radius:6px;background:var(--sage);width:80%}
+  .field .bar.short{width:58%;margin-top:7px;background:#eee8db}
+  .page-card{background:var(--white);border:1.5px solid var(--line);border-radius:22px;padding:20px 22px;position:relative}
+  .page-head{display:flex;justify-content:space-between;align-items:center;font-size:16px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:10px}
+  .page-head b{color:var(--ink);font-size:18px}
+  .page-title{font-family:"SimSun","Songti SC",serif;font-size:28px;line-height:1.45;margin:16px 0 14px}
+  .page-lines{display:flex;flex-direction:column;gap:9px}
+  .page-lines i{display:block;height:8px;border-radius:5px;background:#e2ddd1}
+  .highlight{background:var(--gold-2);border-radius:5px;padding:9px 10px;margin:14px 0;position:relative}
+  .highlight i{display:block;height:8px;border-radius:5px;background:#6d5830;margin:7px 0}
+  .highlight::before,.highlight::after{content:"";position:absolute;width:9px;height:9px;background:var(--green)}
+  .highlight::before{left:-5px;top:-5px}
+  .highlight::after{right:-5px;bottom:-5px}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;flex:none}
+  .chips .pill{font-size:17px;padding:7px 14px}
+  /* cover */
+  .cover h1{font-size:120px;margin-top:36px}
+  .cover .lede{font-size:27px}
+  .cover-stage{display:grid;grid-template-columns:0.96fr 42px 1.06fr;gap:0;align-items:stretch;margin-top:26px;flex:1;min-height:0}
+  .cover-stage .panel{padding-bottom:18px;overflow:hidden;display:flex;flex-direction:column}
+  .cover-stage .panel-head{padding:16px 18px 0}
+  .cover-stage .panel-head .tag{background:var(--sage);color:var(--green);font-size:15px;padding:4px 11px;border-radius:999px;font-weight:700}
+  .cover-stage .panel-head .mini{font-size:12px;color:var(--muted);letter-spacing:.02em}
+  .cover-stage .panel-body{padding:12px 18px 0;display:flex;flex-direction:column;flex:1;min-height:0}
+  .cover-stage .page-card{padding:16px 18px;overflow:hidden}
+  .cover-stage .page-title{font-size:23px;margin:12px 0 10px}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--green);font-size:34px;font-family:Consolas,monospace}
+  .cover .chips{margin-top:18px}
+  .page-foot{position:absolute;left:20px;right:20px;bottom:15px;border-top:1px solid var(--line);padding-top:9px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:.02em}
+  .figure{margin-top:14px;border:1.2px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--white)}
+  .figure .cap{font-size:12px;color:var(--muted);letter-spacing:.04em;display:flex;justify-content:space-between}
+  .fig-bars{display:flex;align-items:flex-end;gap:10px;height:108px;margin-top:8px;padding:0 6px;border-bottom:1px solid var(--line)}
+  .fig-bars i{flex:1;background:var(--sage);border-radius:4px 4px 0 0;display:block}
+  .fig-bars i:nth-child(2){background:var(--gold-2)}
+  .fig-bars i:nth-child(4){background:var(--green-2);opacity:.72}
+  .fig-bars i:nth-child(5){background:var(--gold-2);opacity:.7}
+  /* pain */
+  .scatter{position:relative;height:620px;margin-top:18px;flex:none}
+  .float-card{position:absolute;width:250px;padding:18px 18px 16px;border-radius:20px;background:var(--card);border:1.5px solid var(--line);box-shadow:0 12px 24px rgba(30,74,60,.06)}
+  .float-card b{display:block;font-size:25px;color:var(--green)}
+  .float-card span{display:block;margin-top:6px;font-size:15px;color:var(--muted)}
+  .float-card .mini-lines{margin-top:13px;display:flex;flex-direction:column;gap:7px}
+  .float-card .mini-lines i{height:7px;border-radius:5px;background:#e3ded2}
+  .scatter svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .cross{position:absolute;left:470px;top:245px;width:58px;height:58px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:300;box-shadow:0 8px 18px rgba(197,106,69,.28)}
+  blockquote{font-family:"SimSun","Songti SC",serif;font-size:34px;line-height:1.65;margin:42px 0 18px;padding-top:10px;color:var(--ink);max-width:880px}
+  blockquote::before{content:"“";display:block;color:var(--gold);font-size:64px;line-height:.6;margin-bottom:8px}
+  /* split */
+  .split{display:grid;grid-template-columns:.88fr 1.12fr;gap:18px;margin-top:22px;flex:1;min-height:0}
+  .split .panel{padding-bottom:16px;overflow:hidden;display:flex;flex-direction:column}
+  .chat{padding:14px 16px 0;display:flex;flex-direction:column;flex:1;min-height:0}
+  .bubble{border-radius:15px;padding:10px 13px;font-size:17px;line-height:1.55}
+  .bubble.me{background:var(--sage);color:var(--green);margin-left:90px}
+  .bubble.ai{background:#f1ebe0;color:var(--ink);margin-top:14px}
+  .answer{font-size:16px;line-height:1.7;margin-top:12px}
+  .cite{display:inline-flex;padding:2px 7px;border-radius:5px;background:var(--green);color:#fff;font-family:Consolas,monospace;font-size:12px;vertical-align:1px}
+  .evidence{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;font-size:13px;color:var(--muted);line-height:1.8}
+  .tabs{display:flex;gap:12px;font-size:14px;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 0}
+  .tabs b{color:var(--green);border-bottom:2px solid var(--green);padding-bottom:7px;margin-bottom:-1px}
+  /* units */
+  .units{display:flex;flex-direction:column;gap:14px;margin-top:20px;flex:1;min-height:0}
+  .unit{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:13px 16px;display:flex;flex-direction:column;justify-content:center;gap:9px;box-shadow:0 8px 18px rgba(30,74,60,.05);flex:1}
+  .unit-head{display:flex;align-items:center;gap:9px;font-size:15px;color:var(--muted)}
+  .unit-head .num{font-family:Consolas,monospace;color:var(--gold);font-size:20px;font-weight:700}
+  .unit-head h3{font-size:18px;margin:0;color:var(--ink);font-weight:700;letter-spacing:.01em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .unit-body{display:grid;grid-template-columns:1.08fr .92fr;gap:14px}
+  .original,.reading{border-radius:10px;padding:9px 11px}
+  .original{background:var(--gold-2)}
+  .reading{background:#f1ebe0}
+  .original label,.reading label{display:block;font-size:11px;letter-spacing:.14em;font-weight:700;margin-bottom:5px}
+  .original label{color:#6f4e13}.reading label{color:var(--accent)}
+  .original p,.reading p{margin:0;font-size:15px;line-height:1.62;color:#3d3525}
+  .reading p{color:#4b4a41}
+  .unit .jump{font-size:12px;color:var(--green);white-space:nowrap}
+  /* qa grid */
+  .qa-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:18px;margin-top:20px;flex:1;min-height:0}
+  .qa-grid .panel{padding:18px 20px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+  .memory-item{background:#f1ebe0;border-radius:12px;padding:11px 12px}
+  .memory-item .tag{font-size:11px;color:var(--green);background:var(--sage);border-radius:999px;padding:2px 7px;margin-right:6px}
+  .memory-item p{margin:6px 0 0;font-size:14px;line-height:1.55}
+  .memory-item .scope{font-size:11px;color:var(--muted);margin-top:6px}
+  .ev-item{display:flex;align-items:center;gap:9px;font-size:15px;padding:8px 0;border-bottom:1px dashed #e6dfd2;color:#4b4a41}
+  .ev-item:last-child{border-bottom:0}
+  .ev-item .cite{flex:none}
+  .composer{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--line);background:var(--white);border-radius:14px;padding:12px 14px;font-size:15px;color:var(--muted)}
+  .composer b{width:28px;height:28px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:400}
+  /* arch */
+  .arch{display:grid;grid-template-columns:1fr 44px 1.18fr 44px 1fr;align-items:center;gap:0;margin-top:28px}
+  .arch .box{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:22px 18px;min-height:142px;box-shadow:0 10px 22px rgba(30,74,60,.05);display:flex;flex-direction:column;justify-content:center}
+  .arch .box b{display:block;font-size:20px;margin-bottom:9px}
+  .arch .box span{font-size:13px;color:var(--muted);line-height:1.5;font-family:Consolas,monospace}
+  .arch .arrow2{color:var(--green);font-size:28px;text-align:center;font-family:Consolas,monospace}
+  .safe{display:flex;align-items:center;gap:12px;margin-top:20px;font-size:19px;color:var(--green)}
+  .safe svg{width:30px;height:30px;stroke:var(--green);fill:none;stroke-width:1.6}
+  .bullets{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:16px;color:var(--muted)}
+  .bullets li::before{content:"—";color:var(--gold);margin-right:8px}
+  .bounds{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  .bound{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:15px 18px}
+  .bound h4{margin:0 0 9px;font-size:17px;color:var(--green);letter-spacing:.04em}
+  .bound ul{margin:0;padding:0;list-style:none;font-size:15px;line-height:1.55;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+  .bound li::before{content:"·";color:var(--gold);margin-right:8px;font-weight:700}
+  .bound.no h4{color:var(--accent)}
+  .config-card{margin-top:18px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px 18px}
+  .config-row{display:grid;grid-template-columns:84px 1fr 1.25fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #eee8db;font-size:15px}
+  .config-row:last-child{border-bottom:0}
+  .config-row b{font-size:14px;color:var(--green)}
+  .config-row .mono{font-size:13px;color:var(--ink)}
+  .config-row span:last-child{color:var(--muted)}
+  /* install */
+  .steps{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+  .step{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:22px 20px;box-shadow:0 8px 18px rgba(30,74,60,.05)}
+  .step .num{font-family:Consolas,monospace;font-size:30px;color:var(--gold);font-weight:700;line-height:1}
+  .step h3{margin:0 0 8px;font-size:22px}
+  .code{background:var(--ink);color:#f2ede2;border-radius:9px;padding:11px 13px;font-family:Consolas,monospace;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .step p{margin:8px 0 0;font-size:15px;color:var(--muted)}
+  .repo{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .caveats{margin-top:18px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:13px 18px}
+  .repo b{display:block;font-family:Consolas,monospace;font-size:20px;color:var(--ink)}
+  .repo span{display:block;margin-top:6px;font-size:14px;color:var(--muted)}
+  .repo .note{margin-top:12px;font-size:13px;color:var(--accent)}
+</style>
+</head>
+<body>
+<script>
+  const n = new URLSearchParams(location.search).get("slide") || "1";
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".slide").forEach((el, i) => el.classList.toggle("active", String(i + 1) === n));
+  });
+</script>
+
+<!-- 01 COVER -->
+<section class="slide cover">
+  <div class="top">
+    <span class="brand">
+      <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16"/><path d="M8 7h8M8 10h6"/></svg>
+      SCHOLARLOOM × DEEPSEEK HARNESS
+    </span>
+    <span class="mono">01 / 07</span>
+  </div>
+  <div class="rule"></div>
+  <h1>读文献<br><span class="green">别再切窗口了</span></h1>
+  <p class="lede">把本地文献库接进 DeepSeek Harness。<br>左边解读，右边原文，永远同屏。</p>
+  <div class="cover-stage">
+    <div class="panel">
+      <div class="panel-head"><span class="tag">解读</span><span class="mini">速览 · 深读 · 问答 · 笔记 · 记忆</span></div>
+      <div class="panel-body">
+        <div class="tiny" style="color:var(--gold);margin-top:18px;letter-spacing:.12em">一句话</div>
+        <p class="quote-text">把论文拆成可核对的结构，而不是只给一段总述。</p>
+        <div class="field"><b>研究问题</b><div class="bar"></div><div class="bar short"></div></div>
+        <div class="field"><b>设计与对照</b><div class="bar" style="width:72%"></div><div class="bar short"></div></div>
+        <div class="field"><b>整理的结果</b><div class="bar" style="width:64%"></div><div class="bar short"></div></div>
+        <div class="field"><b>关键证据</b><div class="bar" style="width:76%"></div><div class="bar short"></div></div>
+        <div class="field"><b>结论</b><div class="bar" style="width:68%"></div></div>
+        <div class="field"><b>局限</b><div class="bar" style="width:52%;background:#eee8db"></div></div>
+        <div style="margin-top:auto;display:flex;gap:10px;align-items:center">
+          <span class="pill">证据 12 条</span><span class="tiny">点页码跳原文</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="page-card">
+      <div class="page-head"><b>PDF 全文</b><span>12 / 63</span></div>
+      <div class="page-title">Selective inhibition of<br>trans-signalling</div>
+      <div class="page-lines">
+        <i class="w90"></i><i class="w80"></i><i class="w70"></i><i class="w90"></i>
+      </div>
+      <div class="highlight"><i class="w90"></i><i class="w80"></i><i class="w60"></i></div>
+      <div class="page-lines"><i class="w90"></i><i class="w80"></i><i class="w70"></i><i class="w90"></i><i class="w60"></i></div>
+      <div style="margin-top:14px"><span class="pill">可选中 · 可复制</span></div>
+      <div class="figure">
+        <div class="cap"><span>图 2 · 剂量反应</span><span>p.12</span></div>
+        <div class="fig-bars"><i style="height:34%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:78%"></i><i style="height:64%"></i></div>
+      </div>
+      <div class="page-lines" style="margin-top:14px"><i class="w90"></i><i class="w80"></i><i class="w70"></i><i class="w60"></i></div>
+      <div class="page-foot"><span>p.12 / 63</span><span>连续滚动</span></div>
+    </div>
+  </div>
+  <div class="chips"><span class="pill">连续上下滚</span><span class="pill">原文不消失</span><span class="pill">页码联动</span></div>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">01 / 07</span></div>
+</section>
+
+<!-- 02 PAIN -->
+<section class="slide">
+  <div class="top"><span class="brand">SCHOLARLOOM × DEEPSEEK HARNESS</span><span class="mono">02 / 07</span></div>
+  <div class="rule"></div>
+  <h1 class="small">一篇论文，<span class="accent">五个窗口</span></h1>
+  <p class="lede">PDF、阅读卡、问答、笔记、深读各开一个。<br>刚看到一句，切走就忘了页码。</p>
+  <div class="scatter">
+    <svg viewBox="0 0 904 620" preserveAspectRatio="none">
+      <line x1="245" y1="165" x2="330" y2="115" stroke="#b0a797" stroke-width="2" stroke-dasharray="7 8"/>
+      <line x1="655" y1="120" x2="700" y2="255" stroke="#b0a797" stroke-width="2" stroke-dasharray="7 8"/>
+      <line x1="245" y1="420" x2="330" y2="485" stroke="#b0a797" stroke-width="2" stroke-dasharray="7 8"/>
+      <line x1="655" y1="405" x2="470" y2="500" stroke="#b0a797" stroke-width="2" stroke-dasharray="7 8"/>
+    </svg>
+    <div class="float-card" style="left:0;top:55px"><b>PDF</b><span>第 12 页</span><div class="mini-lines"><i></i><i style="width:78%"></i><i style="width:86%"></i></div></div>
+    <div class="float-card" style="left:330px;top:0"><b>阅读卡</b><span>一句话</span><div class="mini-lines"><i></i><i style="width:86%"></i><i style="width:64%"></i></div></div>
+    <div class="float-card" style="left:654px;top:55px"><b>问答</b><span>p.12</span><div class="mini-lines"><i></i><i style="width:74%"></i><i style="width:88%"></i></div></div>
+    <div class="float-card" style="left:0;top:355px"><b>笔记</b><span>论证链</span><div class="mini-lines"><i></i><i style="width:82%"></i><i style="width:60%"></i></div></div>
+    <div class="float-card" style="left:330px;top:390px"><b>深读</b><span>63 个单元</span><div class="mini-lines"><i></i><i style="width:88%"></i><i style="width:70%"></i></div></div>
+    <div class="cross">×</div>
+  </div>
+  <blockquote>问题不是工具不够，<br>是它们不在同一个屏幕里。</blockquote>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">02 / 07</span></div>
+</section>
+
+<!-- 03 SIDE BY SIDE -->
+<section class="slide">
+  <div class="top"><span class="brand">SCHOLARLOOM × DEEPSEEK HARNESS</span><span class="mono">03 / 07</span></div>
+  <div class="rule"></div>
+  <h1 class="small">原文和解读<br><span class="green">终于同屏</span></h1>
+  <p class="lede">切页签不丢原文；引用跳页只更新右侧 PDF。</p>
+  <div class="split">
+    <div class="panel">
+      <div class="panel-head"><span class="pill">解读</span><span class="tiny">速览 深读 问答 笔记 记忆</span></div>
+      <div class="chat">
+        <div class="tabs"><b>问答</b><span>证据</span></div>
+        <div class="bubble me">这篇论文的对照够吗？</div>
+        <div class="bubble ai">有三类对照，但缺少剂量梯度 <span class="cite">p.12</span></div>
+        <div class="answer"><span class="cite">p.12</span> 跳到原文</div>
+        <div class="bubble me" style="margin-top:16px">剂量梯度会影响结论吗？</div>
+        <div class="bubble ai">会。高剂量组缺失，因果强度要打折 <span class="cite">p.14</span></div>
+        <div class="evidence">证据 4 条<br>E1 p.12 对照与剂量<br>E2 p.14 复现细节<br>E3 p.18 阴性结果<br>E4 p.22 亚组分析</div>
+        <div style="margin-top:auto">
+          <div class="composer"><span>继续追问这篇论文…</span><b>↵</b></div>
+          <p class="tiny" style="margin:9px 0 0">记忆默认参与问答。</p>
+        </div>
+      </div>
+    </div>
+    <div class="page-card">
+      <div class="page-head"><b>PDF 全文</b><span>12 / 63</span></div>
+      <div class="page-title">Selective inhibition of<br>trans-signalling</div>
+      <div class="page-lines"><i class="w90"></i><i class="w80"></i><i class="w70"></i><i class="w90"></i><i class="w60"></i></div>
+      <div class="highlight"><i class="w90"></i><i class="w80"></i><i class="w60"></i></div>
+      <div class="page-lines"><i class="w90"></i><i class="w80"></i><i class="w70"></i><i class="w90"></i><i class="w60"></i><i class="w80"></i></div>
+      <div class="highlight" style="background:#dde7de"><i class="w80" style="background:#3e5a4d"></i><i class="w60" style="background:#3e5a4d"></i></div>
+      <div class="figure">
+        <div class="cap"><span>图 3 · 亚组效应</span><span>p.14</span></div>
+        <div class="fig-bars"><i style="height:42%"></i><i style="height:66%"></i><i style="height:50%"></i><i style="height:84%"></i><i style="height:58%"></i></div>
+      </div>
+      <div class="page-lines" style="margin-top:14px"><i class="w90"></i><i class="w80"></i><i class="w70"></i><i class="w60"></i><i class="w80"></i></div>
+      <div class="page-foot"><span>p.12 / 63</span><span>连续滚动 · 文本可选中</span></div>
+    </div>
+  </div>
+  <div class="chips"><span class="pill">连续滚动</span><span class="pill">文本可选中</span><span class="pill">引用跳页</span></div>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">03 / 07</span></div>
+</section>
+
+<!-- 04 DEEP READ -->
+<section class="slide">
+  <div class="top"><span class="brand">SCHOLARLOOM × DEEPSEEK HARNESS</span><span class="mono">04 / 07</span></div>
+  <div class="rule"></div>
+  <h1 class="small">深读，<span class="green">不是一段总述</span></h1>
+  <p class="lede">实验单元逐条生成；原文在前，解读在后。</p>
+  <div class="chips" style="margin-top:14px"><span class="pill accent">63 个单元</span><span class="pill gold">原文 → 解读</span></div>
+  <div class="units">
+    <article class="unit">
+      <div class="unit-head"><span class="num">01</span><span class="pill">背景</span><h3>IL-6 经典与反式信号</h3><span>p.1–2</span></div>
+      <div class="unit-body">
+        <div class="original"><label>原文</label><p>Classic signalling is anti-inflammatory, while trans-signalling drives intestinal inflammation.</p></div>
+        <div class="reading"><label>解读</label><p>该作者陈述性地建立“经典保护、反式致病”的二分法，作为全文论证前提。</p><span class="jump">跳到原文 p.1</span></div>
+      </div>
+    </article>
+    <article class="unit">
+      <div class="unit-head"><span class="num">12</span><span class="pill">结果</span><h3>CHD8 突变与病例对照</h3><span>p.12</span></div>
+      <div class="unit-body">
+        <div class="original"><label>原文</label><p>15 independent mutations were identified; 8,792 controls were unaffected siblings.</p></div>
+        <div class="reading"><label>解读</label><p>病例对照显示突变负担升高；片段未给出全部效应量，需回原文核对。</p><span class="jump">跳到原文 p.12</span></div>
+      </div>
+    </article>
+    <article class="unit">
+      <div class="unit-head"><span class="num">27</span><span class="pill">方法</span><h3>单细胞与类器官验证</h3><span>p.26</span></div>
+      <div class="unit-body">
+        <div class="original"><label>原文</label><p>RNA-seq, BrainSpan and cerebral organoids were used to test expression specificity.</p></div>
+        <div class="reading"><label>解读</label><p>方法覆盖表达与功能两层；样本量和统计细节需逐项复核。</p><span class="jump">跳到原文 p.26</span></div>
+      </div>
+    </article>
+    <article class="unit">
+      <div class="unit-head"><span class="num">39</span><span class="pill">结论</span><h3>反式信号是可干预节点</h3><span>p.31</span></div>
+      <div class="unit-body">
+        <div class="original"><label>原文</label><p>Blocking trans-signalling reduced pathology without impairing classic IL-6 signalling.</p></div>
+        <div class="reading"><label>解读</label><p>结论落在可干预性上；长期阻断的安全性与选择性仍需独立验证。</p><span class="jump">跳到原文 p.31</span></div>
+      </div>
+    </article>
+  </div>
+  <p class="lede" style="font-size:19px;margin-top:14px">点「跳到原文」，滚动到具体段落并高亮。</p>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">04 / 07</span></div>
+</section>
+
+<!-- 05 QA + MEMORY -->
+<section class="slide">
+  <div class="top"><span class="brand">SCHOLARLOOM × DEEPSEEK HARNESS</span><span class="mono">05 / 07</span></div>
+  <div class="rule"></div>
+  <h1 class="small">问答有页码，<br><span class="green">记忆可编辑</span></h1>
+  <p class="lede">回答不是终点，能跳回原文才是。</p>
+  <div class="qa-grid">
+    <div class="panel">
+      <div class="panel-head"><b>证据问答</b><span class="pill">自由提问</span></div>
+      <div class="bubble me" style="margin-top:14px">这篇论文的对照够吗？</div>
+      <div class="answer" style="font-size:18px"><b style="color:var(--gold);font-size:14px;letter-spacing:.08em">回答</b><br><span style="font-family:SimSun,serif;font-size:22px;line-height:1.75">有三类对照支持结论，但缺少剂量梯度 <span class="cite">p.12</span></span></div>
+      <div style="font-size:13px;color:var(--muted);margin-top:14px;letter-spacing:.04em">证据 4 条 · 点页码回原文</div>
+      <div style="margin-top:2px">
+        <div class="ev-item"><span class="cite">p.12</span> 三类对照与剂量梯度</div>
+        <div class="ev-item"><span class="cite">p.14</span> 复现队列与样本量</div>
+        <div class="ev-item"><span class="cite">p.18</span> 阴性结果与边界</div>
+        <div class="ev-item"><span class="cite">p.22</span> 亚组分析与敏感性</div>
+      </div>
+      <div style="margin-top:14px;background:var(--gold-2);border-radius:12px;padding:11px 13px">
+        <div style="font-size:11px;letter-spacing:.12em;color:#6f4e13;font-weight:700">原文片段</div>
+        <p style="margin:6px 0 0;font-family:SimSun,serif;font-size:16px;line-height:1.65;color:#3d3525">“Three independent control cohorts were included, but the high-dose arm was not reported.”</p>
+      </div>
+      <div style="margin-top:auto">
+        <div class="composer"><span>继续追问这篇论文…</span><b>↵</b></div>
+        <p class="tiny" style="margin:9px 0 0">记忆默认参与问答，可随时关闭。</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><b>阅读记忆</b><span class="tiny">偏好 / 课题 / 假设</span></div>
+      <div class="memory-item" style="margin-top:14px"><span class="tag">课题</span>这个课题关注 IL-6 反式信号<div class="scope">作用域：课题</div></div>
+      <div class="memory-item"><span class="tag">偏好</span>先看对照，再看结论<div class="scope">作用域：全局</div></div>
+      <div class="memory-item"><span class="tag">偏好</span>结论必须带页码<div class="scope">作用域：全局</div></div>
+      <div class="memory-item"><span class="tag">假设</span>C20 的选择性来自组装差异<div class="scope">作用域：仅这篇</div></div>
+      <div class="memory-item"><span class="tag">课题</span>关注肠道类器官的验证强度<div class="scope">作用域：课题</div></div>
+      <div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:13px">
+        <div class="tiny" style="letter-spacing:.06em">回答前先检索</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span class="pill">课题</span><span class="pill">偏好</span><span class="pill">假设</span></div>
+        <p class="tiny" style="margin:10px 0 0">按作用域取用；删除后立即退出上下文。</p>
+      </div>
+      <div style="margin-top:auto">
+        <span class="pill accent">+ 新增记忆</span>
+        <p class="tiny" style="margin:10px 0 0">记忆是用户上下文，不是论文证据。</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">05 / 07</span></div>
+</section>
+
+<!-- 06 LOCAL FIRST -->
+<section class="slide">
+  <div class="top"><span class="brand">SCHOLARLOOM × DEEPSEEK HARNESS</span><span class="mono">06 / 07</span></div>
+  <div class="rule"></div>
+  <h1 class="small">数据在本地，<br><span class="green">插件只是窗口</span></h1>
+  <p class="lede">服务只监听回环；插件不建第二份数据库。</p>
+  <div class="arch">
+    <div class="box"><b>DSH 面板</b><span>文献工作台</span></div>
+    <div class="arrow2">→</div>
+    <div class="box"><b>本地服务</b><span>127.0.0.1:8766</span></div>
+    <div class="arrow2">→</div>
+    <div class="box"><b>SQLite + PDF</b><span>data/</span></div>
+  </div>
+  <div class="safe">
+    <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    只监听 127.0.0.1；CSRF / Origin 检查；不新增远端请求。
+  </div>
+  <ul class="bullets">
+    <li>插件连不上时，浏览器里的本地版照常可用</li>
+    <li>换端口只改 <span class="mono">baseUrl</span>，不用改代码或迁移数据</li>
+  </ul>
+  <div class="config-card">
+    <div class="config-row"><b>本地版</b><span class="mono">server.py + web/</span><span>端口、模型/Zotero、data/</span></div>
+    <div class="config-row"><b>插件版</b><span class="mono">dsh-plugin/</span><span>baseUrl、projectDir、autoStart</span></div>
+    <div class="config-row"><b>共同点</b><span class="mono">同一份 data/</span><span>插件不复制题录与 PDF</span></div>
+  </div>
+  <div class="bounds">
+    <div class="bound">
+      <h4>插件负责</h4>
+      <ul><li>文献工作台面板与阅读状态</li><li>四个工具、PDF 转发、健康检查</li><li>服务没起时自动拉起</li></ul>
+    </div>
+    <div class="bound no">
+      <h4>插件不负责</h4>
+      <ul><li>不存题录、笔记或 PDF</li><li>不接管模型密钥</li><li>不修改 Zotero 库</li></ul>
+    </div>
+  </div>
+  <div style="margin-top:16px;padding:14px 18px;border-left:3px solid var(--gold);background:rgba(238,218,169,.32);border-radius:0 12px 12px 0;font-size:15px;line-height:1.65;color:var(--muted)">
+    <b style="color:var(--green)">为什么不让插件存数据？</b> 文献库要能长期备份、迁移、被别的工具读取；面板只是入口，不是仓库。
+  </div>
+  <p style="margin-top:auto;font-family:SimSun,serif;font-size:26px;color:var(--green)">同一份 <span class="mono" style="font-size:23px">data/</span>，两个入口。</p>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">06 / 07</span></div>
+</section>
+
+<!-- 07 INSTALL -->
+<section class="slide">
+  <div class="top"><span class="brand">SCHOLARLOOM × DEEPSEEK HARNESS</span><span class="mono">07 / 07</span></div>
+  <div class="rule"></div>
+  <h1 class="small">三步，<span class="green">装进 DSH</span></h1>
+  <p class="lede">本地服务先跑起来，再装插件。</p>
+  <div class="chips" style="margin-top:14px"><span class="pill">Python 3.10+</span><span class="pill">DSH desktop</span><span class="pill">已有 data/ 或新库</span></div>
+  <div class="steps">
+    <div class="step"><div class="num">01</div><div><h3>启动本地版</h3><div class="code">python server.py --port 8766</div><p>浏览器打开 127.0.0.1:8766</p></div></div>
+    <div class="step"><div class="num">02</div><div><h3>安装插件</h3><div class="code">install.ps1 -Profile desktop</div><p>写入 scholarloom-workbench，配置 baseUrl</p></div></div>
+    <div class="step"><div class="num">03</div><div><h3>打开面板</h3><div class="code">DSH 左侧「文献工作台」</div><p>文库、原文、解读、问答同屏</p></div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:14px;color:var(--muted)"><span class="pill">验证</span>面板能列出文库、打开 PDF，说明插件已接通。</div>
+  <div class="caveats">
+    <div class="tiny" style="letter-spacing:.1em;color:var(--gold);font-weight:700">先说清楚</div>
+    <ul class="bullets" style="margin-top:9px;font-size:15px">
+      <li>扫描版 / 纯图片 PDF 没有文本层，不能选字</li>
+      <li>段落高亮是临时对照，不写回 PDF</li>
+      <li>记忆页目前固定 <span class="mono">project=default</span></li>
+    </ul>
+  </div>
+  <div class="repo">
+    <b>github.com/segayi1/scholarloom</b>
+    <span>docs/CONFIGURATION.md · dsh-plugin/config.example.yml</span>
+    <div class="note">本地版和插件版可以同时用；换端口只改 baseUrl。</div>
+  </div>
+  <div class="foot"><span>ScholarLoom · 本地优先文献工作台</span><span class="page">07 / 07</span></div>
+</section>
+</body>
+</html>

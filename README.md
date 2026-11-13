@@ -14,6 +14,7 @@
     <img src="https://img.shields.io/badge/local--first-yes-d7b76d" alt="Local-first">
     <img src="https://img.shields.io/badge/Python-3.12%2B-174c42" alt="Python 3.12+">
     <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux-supported-d7b76d" alt="Windows, macOS, and Linux">
+    <img src="https://img.shields.io/badge/DeepSeek%20Harness-plugin-c9705b" alt="DeepSeek Harness plugin">
     <a href="LICENSE"><img src="https://img.shields.io/github/license/segayi1/scholarloom?color=c9705b" alt="MIT License"></a>
   </p>
 
@@ -22,7 +23,14 @@
     ·
     <a href="#quick-start">Quick start</a>
     ·
+    <a href="#two-entry-points-one-library">DSH plugin</a>
+    ·
     <a href="#documentation">Documentation</a>
+  </p>
+
+  <p>
+    <strong>New · DeepSeek Harness plugin:</strong> one more entry point to the same library.
+    <a href="#two-entry-points-one-library">See the panel →</a>
   </p>
 
   <p><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
@@ -53,10 +61,36 @@
 
 <p align="center"><strong>Start with one paper. Keep the evidence. Let the project grow.</strong></p>
 
-### Pick your starting point
+## Two entry points, one library
+
+The same local library opens in the browser or inside DeepSeek Harness. Neither is a copy: both read the same `data/`, and the DSH plugin is only an entry point—no second database, no separate model settings, no new remote service.
+
+<table>
+  <tr>
+    <td width="50%"><strong>Browser workbench</strong><br><code>server.py</code> + <code>web/</code> at <code>127.0.0.1:8766</code>. Full intake, settings, Zotero, synthesis, and administration.</td>
+    <td width="50%"><strong>DeepSeek Harness panel</strong><br>The optional <a href="dsh-plugin/"><code>dsh-plugin/</code></a> adds library search, reading cards, continuous PDF, page-grounded Q&amp;A, notes, memory, and four agent tools to the DSH sidebar.</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/assets/dsh-workbench-side-by-side.png" alt="ScholarLoom inside DeepSeek Harness: reading panel, page-grounded Q&A, and PDF side by side" width="64%">
+</p>
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\dsh-plugin\install.ps1 -Profile desktop
+```
+
+Both can run at once. Configuration is separate: the local app owns the port, model/Zotero settings, and `data/`; the plugin has `baseUrl`, `projectDir`, `pythonPath`, `autoStart`, and `requestTimeoutMs`. See [configuration](docs/CONFIGURATION.md).
+
+Agent tools: `scholarloom_search`, `scholarloom_paper`, `scholarloom_ask`, `scholarloom_status`.
+
+[Plugin README](dsh-plugin/README.md) · [Install, configuration, and security boundary](docs/DSH_PLUGIN.md)
+
+## Pick your starting point
 
 | You want to… | Start here |
 | :--- | :--- |
+| Use it inside DeepSeek Harness | [DSH plugin](#two-entry-points-one-library) · [Setup](docs/DSH_PLUGIN.md) |
 | Clean up a busy download folder | [Quick start](#quick-start) · [Usage guide](docs/USAGE.md) |
 | Ask questions that return to the PDF | [Evidence and Q&A](docs/USAGE.md#evidence-grounded-reading) |
 | Compare several papers | [Project retrieval and synthesis](docs/USAGE.md#comparison-synthesis) |
@@ -99,20 +133,6 @@ The core reader and local search do not require an account. You choose whether t
 - **Named reading sessions.** Keep separate lines of inquiry inside one paper, restore drafts and selections, export a session, and avoid duplicate replies after retries.
 - **Reader and desktop workflow.** Work with parallel tabs, fixed navigation and scrolling, adjustable reader columns, paragraph interpretation, manual figure links, and a Windows launcher with in-progress work protection.
 - **Stronger evidence boundaries.** Validate overviews, surface formulation conflicts, reject stale evidence positions, and label model interpretations separately from paper evidence.
-
-## DeepSeek Harness workbench
-
-The optional [`dsh-plugin/`](dsh-plugin/) package mounts the same local library as a native DSH panel: library search, reading cards, in-window PDF reading, page-grounded Q&A, reading memory, reading notes, and agent tools (`scholarloom_search`, `scholarloom_paper`, `scholarloom_ask`, `scholarloom_status`). ScholarLoom remains the source of truth; the plugin adds no second database and sends no new remote request. See [dsh-plugin/README.md](dsh-plugin/README.md) for the plugin README and [docs/DSH_PLUGIN.md](docs/DSH_PLUGIN.md) for installation, configuration, and the security boundary.
-
-## Two ways to run, configured separately
-
-ScholarLoom can run as:
-
-1. **Local web app** — `server.py` + `web/`, opened at `http://127.0.0.1:8766`;
-2. **DSH plugin** — `dsh-plugin/`, opened from the DSH sidebar and connected to the local server;
-3. **Both at once** — the recommended setup; the plugin reads the same `data/` and never creates a second database.
-
-The two forms have separate configuration: the local app owns the port, model/Zotero settings and `data/`; the plugin has `baseUrl`, `projectDir`, `pythonPath`, `autoStart` and `requestTimeoutMs`. See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full matrix, Windows commands and troubleshooting.
 
 ## Download and automatic setup
 
@@ -195,13 +215,14 @@ The server binds to localhost, and the browser UI ships with the project. Develo
 
 | Start here | Go deeper |
 | :--- | :--- |
+| [DSH plugin](dsh-plugin/README.md) | Native DeepSeek Harness panel, agent tools, installation, and configuration |
 | [Usage guide](docs/USAGE.md) | Intake, reading, Q&A, memory, figures, synthesis, and discovery |
 | [Project memory](docs/PROJECT_MEMORY.md) | Product direction, architecture, and known gaps |
 | [Data format](docs/DATA_FORMAT.md) | Storage shape, settings, and private fields |
 | [Contributing](CONTRIBUTING.md) | Development setup and contribution flow |
 | [Security policy](SECURITY.md) | Vulnerability reporting and trust boundaries |
 | [Changelog](CHANGELOG.md) | Features and fixes by release |
-| [Xiaohongshu copy](docs/promotion/xiaohongshu.md) | Ready-to-adapt launch posts and image suggestions |
+| [Launch copy](docs/promotion/dsh-workbench/copy.md) | 7-slide Xiaohongshu carousel and post copy |
 
 ## Contributors
 
