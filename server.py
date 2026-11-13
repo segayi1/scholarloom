@@ -36,7 +36,7 @@ from full_read import (FullReadStore, PROMPT_VERSION, SYNTHESIS_PROMPT_VERSION, 
 from memory import MemoryStore, build_context, input_units, scope, terms
 
 ROOT = Path(__file__).resolve().parent
-APP_VERSION = '2.1.1'
+APP_VERSION = '2.1.2'
 BASE = 'http://127.0.0.1:23119/api/'
 UA = f'ScholarLoom/{APP_VERSION}'
 CATEGORIES = ['抗体结构、表位与免疫机制', '疫苗、病毒与感染', '细胞生物学与药物机制', '植物生物技术与天然产物', '神经科学与行为', '研究方法与工具', '组学、遗传与进化', '生态、微生物与环境', '抗体发现与表达', '合成受体与细胞治疗', '专利技术']

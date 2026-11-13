@@ -74,11 +74,11 @@ ScholarLoom 会等待下载完成，读取文件首页，用 DOI、专利号或�
 ### Windows PowerShell
 
 ```powershell
-$zip = "$env:TEMP\ScholarLoom-2.1.1.zip"
+$zip = "$env:TEMP\ScholarLoom-2.1.2.zip"
 $dst = Join-Path $env:LOCALAPPDATA "ScholarLoom"
-Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.zip" -OutFile $zip
+Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.2.zip" -OutFile $zip
 Expand-Archive $zip $dst -Force
-Set-Location (Join-Path $dst "ScholarLoom-2.1.1")
+Set-Location (Join-Path $dst "ScholarLoom-2.1.2")
 .\setup.ps1
 ```
 
@@ -87,17 +87,25 @@ Set-Location (Join-Path $dst "ScholarLoom-2.1.1")
 ### macOS 和 Linux
 
 ```sh
-curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.tar.gz -o /tmp/ScholarLoom-2.1.1.tar.gz
-tar -xzf /tmp/ScholarLoom-2.1.1.tar.gz
-cd ScholarLoom-2.1.1
+curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.2.tar.gz -o /tmp/ScholarLoom-2.1.2.tar.gz
+tar -xzf /tmp/ScholarLoom-2.1.2.tar.gz
+cd ScholarLoom-2.1.2
 ./setup.sh
 ./start.sh
 ```
 
 `setup.cmd`、`setup.ps1` 和 `setup.sh` 会创建 `.venv`、安装固定版本依赖并验证运行时导入。可选离线翻译模型可单独下载：
 
+Windows PowerShell：
+
+```powershell
+.\.venv\Scripts\python.exe install-translation-model.py
+```
+
+macOS/Linux：
+
 ```sh
-python install-translation-model.py
+.venv/bin/python install-translation-model.py
 ```
 
 ## 快速开始
@@ -111,8 +119,8 @@ python install-translation-model.py
 ### macOS 和 Linux
 
 ```sh
-tar -xzf ScholarLoom-2.1.1.tar.gz
-cd ScholarLoom-2.1.1
+tar -xzf ScholarLoom-2.1.2.tar.gz
+cd ScholarLoom-2.1.2
 chmod +x setup.sh start.sh
 ./setup.sh
 ./start.sh

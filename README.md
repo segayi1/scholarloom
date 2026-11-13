@@ -74,11 +74,11 @@ Every release contains the same source tree: no build step, package manager, or 
 ### Windows PowerShell
 
 ```powershell
-$zip = "$env:TEMP\ScholarLoom-2.1.1.zip"
+$zip = "$env:TEMP\ScholarLoom-2.1.2.zip"
 $dst = Join-Path $env:LOCALAPPDATA "ScholarLoom"
-Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.zip" -OutFile $zip
+Invoke-WebRequest "https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.2.zip" -OutFile $zip
 Expand-Archive $zip $dst -Force
-Set-Location (Join-Path $dst "ScholarLoom-2.1.1")
+Set-Location (Join-Path $dst "ScholarLoom-2.1.2")
 .\setup.ps1
 ```
 
@@ -87,17 +87,25 @@ Then double-click `launch.vbs`.
 ### macOS and Linux
 
 ```sh
-curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.1.tar.gz -o /tmp/ScholarLoom-2.1.1.tar.gz
-tar -xzf /tmp/ScholarLoom-2.1.1.tar.gz
-cd ScholarLoom-2.1.1
+curl -fL https://github.com/segayi1/scholarloom/releases/latest/download/ScholarLoom-2.1.2.tar.gz -o /tmp/ScholarLoom-2.1.2.tar.gz
+tar -xzf /tmp/ScholarLoom-2.1.2.tar.gz
+cd ScholarLoom-2.1.2
 ./setup.sh
 ./start.sh
 ```
 
 `setup.cmd`, `setup.ps1`, and `setup.sh` create `.venv`, install the pinned dependencies, and verify the runtime imports. The optional offline translation model can be downloaded separately:
 
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe install-translation-model.py
+```
+
+macOS/Linux:
+
 ```sh
-python install-translation-model.py
+.venv/bin/python install-translation-model.py
 ```
 
 ## Quick start
@@ -111,8 +119,8 @@ python install-translation-model.py
 ### macOS and Linux
 
 ```sh
-tar -xzf ScholarLoom-2.1.1.tar.gz
-cd ScholarLoom-2.1.1
+tar -xzf ScholarLoom-2.1.2.tar.gz
+cd ScholarLoom-2.1.2
 chmod +x setup.sh start.sh
 ./setup.sh
 ./start.sh

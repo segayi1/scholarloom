@@ -64,7 +64,7 @@ The product direction is broader than PDF chat: ScholarLoom should become the re
 
 - Repository: `https://github.com/segayi1/scholarloom`
 - Branch: `main`
-- Source release: `v2.1.1`
+- Source release: `v2.1.2`
 - Release scope: local-first intake, evidence reader, whole-paper deep reading, project retrieval, evidence matrices, synthesis drafts, named sessions, dossiers, figures, translation, and recovery controls
 - Runtime: Python 3.12, standard-library HTTP server, SQLite, PyMuPDF
 - Frontend: plain HTML, CSS, and JavaScript; no build step
